@@ -28,4 +28,14 @@ export class CreatorService {
         const directoryStructure = buildTree(files, directoryPath);
         return directoryStructure;
     }
+
+    getFileContent(filePath: string): string {
+        try {
+            const data = fs.readFileSync(filePath, 'utf-8');
+            return data;
+        } catch (error) {
+            console.error('Error reading file:', error);
+            return 'Error reading file';
+        }
+    }
 }

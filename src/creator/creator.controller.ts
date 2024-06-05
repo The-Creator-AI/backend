@@ -1,12 +1,17 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { CreatorService } from './creator.service';
 
 @Controller('creator')
 export class CreatorController {
-    constructor(private readonly creatorService: CreatorService) { }
+  constructor(private readonly creatorService: CreatorService) {}
 
-    @Get('directory-structure')
-    getDirectoryStructure(): any {
-        return this.creatorService.getDirectoryStructure();
-    }
+  @Get('directory-structure')
+  getDirectoryStructure(): any {
+    return this.creatorService.getDirectoryStructure();
+  }
+
+  @Get('file/content')
+  getFileContent(@Query('path') filePath: string): string {
+    return this.creatorService.getFileContent(filePath);
+  }
 }
