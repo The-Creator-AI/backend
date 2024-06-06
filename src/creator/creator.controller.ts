@@ -6,8 +6,10 @@ export class CreatorController {
   constructor(private readonly creatorService: CreatorService) {}
 
   @Get('directory-structure')
-  getDirectoryStructure(): any {
-    return this.creatorService.getDirectoryStructure();
+  getDirectoryStructure(@Query('dir') dir?: string) {
+    const currentPath = dir || process.cwd(); // Use provided 'dir' or current working directory
+    const children = this.creatorService.getDirectoryStructure(currentPath);
+    return { children, currentPath };
   }
 
   @Get('file/content')
