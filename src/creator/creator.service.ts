@@ -4,16 +4,15 @@ import * as path from 'path';
 
 @Injectable()
 export class CreatorService {
-    getDirectoryStructure(dir: string, level = 0) {
+    getDirectoryStructure(dir: string, loadShallow: boolean = false, level = 0) {
         const files = fs.readdirSync(dir, { withFileTypes: true });
         const children = files.map((file) => {
             console.log({ file, level });
             const fullPath = path.join(dir, file.name);
             if (file.isDirectory()) {
-                // Only recurse if the level is less than 2
                 return {
                     name: file.name,
-                    children: level < 1 ? this.getDirectoryStructure(fullPath, level + 1) : [],
+                    children: loadShallow && level >= 1 ? [] : this.getDirectoryStructure(fullPath, loadShallow, level + 1),
                 };
             } else {
                 return { name: file.name };
