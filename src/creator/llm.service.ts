@@ -7,15 +7,11 @@ export class LlmService {
     private readonly geminiApiKey: string | undefined = process.env.GEMINI_API_KEY;
     private readonly openaiApiKey: string | undefined = process.env.OPENAI_API_KEY;
 
-    getModelName(): string {
-        if (this.geminiApiKey) {
-          return 'Gemini Pro';
-        } else if (this.openaiApiKey) {
-          return 'GPT-3.5 Turbo';
-        } else {
-          throw new Error('No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.');
-        }
-      }
+    private geminiProModel: string = 'models/gemini-1.5-pro-latest'; // Default model
+    private geminiFlashModel: string = 'gemini-1.5-flash-latest';
+    private openaiModel: string = 'gpt-3.5-turbo';
+
+    private currentModel: string = this.geminiProModel; // Track the current model being used
 
     async sendPrompt(prompt: string): Promise<string> {
         const { type, apiKey } = this.getApiKey();
@@ -35,26 +31,44 @@ export class LlmService {
         }
 
         const genAI = new GoogleGenerativeAI(this.geminiApiKey);
-        const model = genAI.getGenerativeModel({ model: 'models/gemini-1.5-pro-latest' });
+        let debounce = 0;
+        let attempts = 0;
 
-        const response = await model.generateContent({
-            contents: [{
-                role: 'user',
-                parts: [{ text: prompt }],
-            }],
-            generationConfig: {
-                responseMimeType: 'text/plain',
-            },
-            // safetySettings: [{
-            //     category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            //     threshold: HarmBlockThreshold.BLOCK_NONE,
-            // }, {
-            //     category: HarmCategory.HARM_CATEGORY_UNSPECIFIED,
-            //     threshold: HarmBlockThreshold.BLOCK_NONE
-            // }]
-        });
+        while (attempts < 3) {
+            attempts++;
+            if (debounce > 0) {
+                console.log(`Waiting for ${Math.floor(debounce / 1000)} seconds...`);
+            }
+            await new Promise(resolve => setTimeout(resolve, debounce));
+            try {
+                const gemini = genAI.getGenerativeModel({ model: this.currentModel }); // Use currentModel here
+                const response = await gemini.generateContent({
+                    contents: [{
+                        role: 'user',
+                        parts: [{ text: prompt }],
+                    }],
+                    generationConfig: {
+                        responseMimeType: 'text/plain',
+                    },
+                });
+                debounce = 0;
+                return response.response.text();
+            } catch (e: any) {
+                debounce += 5000;
+                if (e.status === 429 && this.currentModel === this.geminiProModel) {
+                    this.currentModel = this.geminiFlashModel; // Update currentModel
+                    console.log(`${this.geminiProModel} limit reached, trying with ${this.geminiFlashModel}`);
+                    continue;
+                }
+                console.log(e);
+                // Handle other errors, e.g., throw an error, return a default message, etc.
+            }
+        }
+        throw new Error('Could not get a response from Gemini after multiple attempts.');
+    }
 
-        return response.response.text();
+    getModelName(): string {
+        return this.currentModel; // Access currentModel here
     }
 
     private async sendPromptToOpenAI(prompt: string): Promise<string> {
@@ -66,8 +80,9 @@ export class LlmService {
             apiKey: this.openaiApiKey,
         });
 
+        this.currentModel = this.openaiModel;
         const response = await model.completions.create({
-            model: "gpt-3.5-turbo",
+            model: this.openaiModel,
             prompt: prompt,
         });
 
