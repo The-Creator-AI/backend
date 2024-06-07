@@ -7,6 +7,16 @@ export class LlmService {
     private readonly geminiApiKey: string | undefined = process.env.GEMINI_API_KEY;
     private readonly openaiApiKey: string | undefined = process.env.OPENAI_API_KEY;
 
+    getModelName(): string {
+        if (this.geminiApiKey) {
+          return 'Gemini Pro';
+        } else if (this.openaiApiKey) {
+          return 'GPT-3.5 Turbo';
+        } else {
+          throw new Error('No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.');
+        }
+      }
+
     async sendPrompt(prompt: string): Promise<string> {
         const { type, apiKey } = this.getApiKey();
 
