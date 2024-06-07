@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory, Part } from '@google/generative-ai';
 import * as openai from 'openai';
+import { CreatorService } from './creator.service';
 
 @Injectable()
 export class LlmService {
@@ -13,8 +14,21 @@ export class LlmService {
 
     private currentModel: string = this.geminiProModel; // Track the current model being used
 
-    async sendPrompt(prompt: string): Promise<string> {
+    constructor(private readonly creatorService: CreatorService) { }
+
+    async sendPrompt(prompt: string, selectedFiles: string[] = []): Promise<string> {
         const { type, apiKey } = this.getApiKey();
+
+        // Read selected files content before sending the prompt
+        const fileContents = this.creatorService.readSelectedFilesContent(selectedFiles);
+
+        // Append file contents to prompt
+        for (const filePath in fileContents) {
+            prompt += `\n\n\`\`\`
+    File: ${filePath}
+    ${fileContents[filePath]}
+    \`\`\`\n\n`;
+        }
 
         if (type === 'gemini') {
             return this.sendPromptToGemini(prompt);

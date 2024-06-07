@@ -31,4 +31,20 @@ export class CreatorService {
             return 'Error reading file';
         }
     }
+
+    readSelectedFilesContent(filePaths: string[]): { [filePath: string]: string } {
+        const fileContents: { [filePath: string]: string } = {};
+    
+        for (const filePath of filePaths) {
+          try {
+            fileContents[filePath] = fs.readFileSync(filePath, 'utf8');
+          } catch (error) {
+            console.error(`Error reading file ${filePath}: ${error}`);
+            // You might want to handle the error more gracefully, 
+            // e.g., add a placeholder value to fileContents[filePath] 
+          }
+        }
+    
+        return fileContents;
+      }
 }

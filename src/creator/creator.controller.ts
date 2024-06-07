@@ -7,10 +7,13 @@ export class CreatorController {
   constructor(private readonly creatorService: CreatorService, private readonly llmService: LlmService) {}
 
   @Post('chat')
-  async chat(@Body() message: { message: string }): Promise<{ message: string, model: string }> {
-    const response = await this.llmService.sendPrompt(message.message);
+  async chat(@Body() message: {
+    message: string;
+    selectedFiles: string[]
+  }): Promise<{ message: string, model: string }> { 
+    const response = await this.llmService.sendPrompt(message.message, message.selectedFiles);
     const modelName = this.llmService.getModelName();
-    return { message: response, model: modelName }; // Send model name along with message
+    return { message: response, model: modelName };
   }
 
   @Get('directory-structure')
