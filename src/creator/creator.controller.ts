@@ -1,9 +1,16 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { CreatorService } from './creator.service';
+import { LlmService } from './llm.service';
 
 @Controller('creator')
 export class CreatorController {
-  constructor(private readonly creatorService: CreatorService) {}
+  constructor(private readonly creatorService: CreatorService, private readonly llmService: LlmService) {}
+
+  @Post('chat')
+  async chat(@Body() message: { message: string }): Promise<string> {
+    const response = await this.llmService.sendPrompt(message.message);
+    return response;
+  }
 
   @Get('directory-structure')
   getDirectoryStructure(@Query('dir') dir?: string, @Query('loadShallow') loadShallow?: boolean) {
