@@ -16,19 +16,29 @@ export class LlmService {
 
     constructor(private readonly creatorService: CreatorService) { }
 
-    async sendPrompt(prompt: string, selectedFiles: string[] = []): Promise<string> {
+    async sendPrompt(chatHistory: {
+        user: string;
+        message: string;
+      }[], selectedFiles: string[] = []): Promise<string> {
         const { type, apiKey } = this.getApiKey();
 
         // Read selected files content before sending the prompt
         const fileContents = this.creatorService.readSelectedFilesContent(selectedFiles);
 
         // Append file contents to prompt
+        let prompt = '';
         for (const filePath in fileContents) {
             prompt += `\n\n\`\`\`
     File: ${filePath}
     ${fileContents[filePath]}
     \`\`\`\n\n`;
         }
+        chatHistory.forEach(message => {
+            prompt += `${message.user}: ${message.message}\n`;
+        });
+
+        console.log(`Prompt:\n\n\n`);
+        console.log(prompt);
 
         if (type === 'gemini') {
             return this.sendPromptToGemini(prompt);

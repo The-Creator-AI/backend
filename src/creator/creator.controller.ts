@@ -8,10 +8,13 @@ export class CreatorController {
 
   @Post('chat')
   async chat(@Body() message: {
-    message: string;
+    chatHistory: {
+      user: string;
+      message: string;
+    }[];
     selectedFiles: string[]
   }): Promise<{ message: string, model: string }> { 
-    const response = await this.llmService.sendPrompt(message.message, message.selectedFiles);
+    const response = await this.llmService.sendPrompt(message.chatHistory, message.selectedFiles);
     const modelName = this.llmService.getModelName();
     return { message: response, model: modelName };
   }

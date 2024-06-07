@@ -7,7 +7,7 @@ export class CreatorService {
     getDirectoryStructure(dir: string, loadShallow: boolean = false, level = 0) {
         const files = fs.readdirSync(dir, { withFileTypes: true });
         const children = files.map((file) => {
-            console.log({ file, level });
+            // console.log({ file, level });
             const fullPath = path.join(dir, file.name);
             if (file.isDirectory()) {
                 return {
