@@ -6,8 +6,9 @@ import * as path from 'path';
 export class CreatorService {
     getDirectoryStructure(dir: string, loadShallow: boolean = false, level = 0) {
         const files = fs.readdirSync(dir, { withFileTypes: true });
-        const children = files.map((file) => {
-            // console.log({ file, level });
+        const children = files
+          .filter(file => !['.git', 'node_modules'].includes(file.name)) // Filter out unwanted directories
+          .map((file) => {
             const fullPath = path.join(dir, file.name);
             if (file.isDirectory()) {
                 return {
