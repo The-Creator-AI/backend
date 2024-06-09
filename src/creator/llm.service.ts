@@ -72,6 +72,7 @@ export class LlmService {
                     `Waiting for ${Math.floor(debounce / 1000)} seconds...`,
                 );
             }
+            console.log(`Using model: ${this.currentModel}`);
             await new Promise((resolve) => setTimeout(resolve, debounce));
             try {
                 const gemini = genAI.getGenerativeModel({
@@ -87,6 +88,10 @@ export class LlmService {
                     generationConfig: {
                         responseMimeType: 'text/plain',
                     },
+                    safetySettings: [{
+                        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                        threshold: HarmBlockThreshold.BLOCK_NONE,
+                    }]
                 });
 
                 for await (const chunk of response.stream) {
