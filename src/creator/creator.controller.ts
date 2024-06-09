@@ -21,7 +21,7 @@ export class CreatorController {
 
   @Get('directory-structure')
   getDirectoryStructure(@Query('dir') dir?: string, @Query('loadShallow') loadShallow?: boolean) {
-    const currentPath = dir || process.cwd(); // Use provided 'dir' or current working directory
+    const currentPath = dir || process.env.WORKING_DIRECTORY;
     const children = this.creatorService.getDirectoryStructure(currentPath, loadShallow);
     return { children, currentPath };
   }
