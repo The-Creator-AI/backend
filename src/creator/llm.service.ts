@@ -16,14 +16,16 @@ export class LlmService {
 
     constructor(private readonly creatorService: CreatorService) { }
 
-    async sendPrompt(chatHistory: {
-        user: string;
-        message: string;
-      }[], selectedFiles: string[] = []): Promise<string> {
+    async sendPrompt(
+        chatHistory: { user: string; message: string }[],
+        selectedFiles: string[] = [],
+    ): Promise<string> {
         const { type, apiKey } = this.getApiKey();
 
         // Read selected files content before sending the prompt
-        const fileContents = this.creatorService.readSelectedFilesContent(selectedFiles);
+        const fileContents = this.creatorService.readSelectedFilesContent(
+            selectedFiles,
+        );
 
         // Append file contents to prompt
         let prompt = '';
@@ -33,7 +35,7 @@ export class LlmService {
     ${fileContents[filePath]}
     \`\`\`\n\n`;
         }
-        chatHistory.forEach(message => {
+        chatHistory.forEach((message) => {
             prompt += `${message.user}: ${message.message}\n`;
         });
 
@@ -45,50 +47,73 @@ export class LlmService {
         } else if (type === 'openai') {
             return this.sendPromptToOpenAI(prompt);
         } else {
-            throw new Error('No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.');
+            throw new Error(
+                'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.',
+            );
         }
     }
 
     private async sendPromptToGemini(prompt: string): Promise<string> {
         if (!this.geminiApiKey) {
-            throw new Error('GEMINI_API_KEY not set in environment variables.');
+            throw new Error(
+                'GEMINI_API_KEY not set in environment variables.',
+            );
         }
 
         const genAI = new GoogleGenerativeAI(this.geminiApiKey);
         let debounce = 0;
         let attempts = 0;
+        let responseText = '';
 
         while (attempts < 3) {
             attempts++;
             if (debounce > 0) {
-                console.log(`Waiting for ${Math.floor(debounce / 1000)} seconds...`);
+                console.log(
+                    `Waiting for ${Math.floor(debounce / 1000)} seconds...`,
+                );
             }
-            await new Promise(resolve => setTimeout(resolve, debounce));
+            await new Promise((resolve) => setTimeout(resolve, debounce));
             try {
-                const gemini = genAI.getGenerativeModel({ model: this.currentModel }); // Use currentModel here
-                const response = await gemini.generateContent({
-                    contents: [{
-                        role: 'user',
-                        parts: [{ text: prompt }],
-                    }],
+                const gemini = genAI.getGenerativeModel({
+                    model: this.currentModel,
+                }); // Use currentModel here
+                const response = await gemini.generateContentStream({
+                    contents: [
+                        {
+                            role: 'user',
+                            parts: [{ text: prompt }],
+                        },
+                    ],
                     generationConfig: {
                         responseMimeType: 'text/plain',
                     },
                 });
+
+                for await (const chunk of response.stream) {
+                    responseText += chunk.text();
+                    console.log(chunk.text());
+                }
                 debounce = 0;
-                return response.response.text();
+                return responseText;
             } catch (e: any) {
                 debounce += 5000;
-                if (e.status === 429 && this.currentModel === this.geminiProModel) {
+                if (
+                    e.status === 429 &&
+                    this.currentModel === this.geminiProModel
+                ) {
                     this.currentModel = this.geminiFlashModel; // Update currentModel
-                    console.log(`${this.geminiProModel} limit reached, trying with ${this.geminiFlashModel}`);
+                    console.log(
+                        `${this.geminiProModel} limit reached, trying with ${this.geminiFlashModel}`,
+                    );
                     continue;
                 }
                 console.log(e);
                 // Handle other errors, e.g., throw an error, return a default message, etc.
             }
         }
-        throw new Error('Could not get a response from Gemini after multiple attempts.');
+        throw new Error(
+            'Could not get a response from Gemini after multiple attempts.',
+        );
     }
 
     getModelName(): string {
@@ -97,7 +122,9 @@ export class LlmService {
 
     private async sendPromptToOpenAI(prompt: string): Promise<string> {
         if (!this.openaiApiKey) {
-            throw new Error('OPENAI_API_KEY not set in environment variables.');
+            throw new Error(
+                'OPENAI_API_KEY not set in environment variables.',
+            );
         }
 
         const model = new openai.OpenAI({
@@ -115,7 +142,9 @@ export class LlmService {
 
     private getApiKey() {
         if (this.geminiApiKey && this.openaiApiKey) {
-            console.warn("Both GEMINI_API_KEY and OPENAI_API_KEY are set. Using GEMINI_API_KEY.");
+            console.warn(
+                'Both GEMINI_API_KEY and OPENAI_API_KEY are set. Using GEMINI_API_KEY.',
+            );
         }
 
         if (this.geminiApiKey) {
