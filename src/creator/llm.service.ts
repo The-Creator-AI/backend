@@ -123,7 +123,9 @@ export class LlmService {
         } else if (this.openaiApiKey) {
             return { type: 'openai', apiKey: this.openaiApiKey };
         } else {
-            throw new Error('Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.');
+            throw new Error(`Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.
+You can get API KEY for Gemini from https://aistudio.google.com/
+            `);
         }
     }
 }
