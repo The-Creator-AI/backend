@@ -94,9 +94,18 @@ export class LlmService {
                     }]
                 });
 
-                for await (const chunk of response.stream) {
-                    responseText += chunk.text();
-                    console.log(chunk.text());
+                let retry = true;
+                while (retry) {
+                    try {
+                        for await (const chunk of response.stream) {
+                            responseText += chunk.text();
+                            console.log(chunk.text());
+                        }
+                        retry = false;
+                    } catch (e: any) {
+                        retry = true;
+                        console.log(e);
+                    }   
                 }
                 debounce = 0;
                 return responseText;
