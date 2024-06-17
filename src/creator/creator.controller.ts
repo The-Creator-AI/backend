@@ -19,6 +19,17 @@ export class CreatorController {
     return { message: response, model: modelName };
   }
 
+  @Post('token-count')
+  async tokenCount(@Body() message: {
+    chatHistory: {
+      user: string;
+      message: string;
+    }[];
+    selectedFiles: string[]
+  }): Promise<number> {
+    return this.llmService.getTokenCount(message.chatHistory, message.selectedFiles);
+  }
+
   @Get('directory-structure')
   getDirectoryStructure(@Query('dir') dir?: string, @Query('loadShallow') loadShallow?: boolean) {
     const workingDirectory = process.env.CUR_WRK_DIR;

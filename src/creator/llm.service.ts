@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory, Part } from '@google/generative-ai';
 import * as openai from 'openai';
 import { CreatorService } from './creator.service';
+import { encoding_for_model } from 'tiktoken';
 
 @Injectable()
 export class LlmService {
@@ -16,12 +17,10 @@ export class LlmService {
 
     constructor(private readonly creatorService: CreatorService) { }
 
-    async sendPrompt(
+    private async buildPrompt(
         chatHistory: { user: string; message: string }[],
         selectedFiles: string[] = [],
     ): Promise<string> {
-        const { type, apiKey } = this.getApiKey();
-
         // Read selected files content before sending the prompt
         const fileContents = this.creatorService.readSelectedFilesContent(
             selectedFiles,
@@ -41,11 +40,33 @@ export class LlmService {
 
         console.log(`Prompt:\n\n\n`);
         console.log(prompt);
+        return prompt;
+    };
 
+    async sendPrompt(
+        chatHistory: { user: string; message: string }[],
+        selectedFiles: string[] = [],
+    ): Promise<string> {
+        const prompt = await this.buildPrompt(chatHistory, selectedFiles);
+        const { type } = this.getApiKey();
         if (type === 'gemini') {
             return this.sendPromptToGemini(prompt);
         } else if (type === 'openai') {
             return this.sendPromptToOpenAI(prompt);
+        } else {
+            throw new Error(
+                'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.',
+            );
+        }
+    }
+
+    async getTokenCount(chatHistory: { user: string; message: string }[], selectedFiles: string[] = []): Promise<number> {
+        const prompt = await this.buildPrompt(chatHistory, selectedFiles);
+        const { type } = this.getApiKey();
+        if (type === 'gemini') {
+            return this.getTokenCountToGemini(prompt);
+        } else if (type === 'openai') {
+            return this.getTokenCountToOpenAI(prompt);
         } else {
             throw new Error(
                 'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.',
@@ -170,5 +191,21 @@ export class LlmService {
 You can get API KEY for Gemini from https://aistudio.google.com/
             `);
         }
+    }
+
+    private async getTokenCountToGemini(prompt: string): Promise<number> {
+        const genAI = new GoogleGenerativeAI(this.geminiApiKey);
+        const gemini = genAI.getGenerativeModel({
+            model: this.currentModel,
+        });
+        return (await gemini.countTokens(prompt)).totalTokens;
+    }
+
+    private async getTokenCountToOpenAI(prompt: string): Promise<number> {
+        const encoder = encoding_for_model("gpt-4");
+
+        const tokens = encoder.encode(prompt);
+        encoder.free();
+        return tokens.length;
     }
 }
