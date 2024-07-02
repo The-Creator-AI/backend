@@ -28,6 +28,7 @@
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
     "axios": "^1.7.2",
+    "cheerio": "^1.0.0-rc.12",
     "openai": "^4.49.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",

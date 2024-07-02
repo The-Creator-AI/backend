@@ -1,4 +1,8 @@
+import { GoogleSearchResult } from './google-search-result.dto';
+
 export interface ResearchResult {
-  summary: string;
-  sources: { title: string; url: string }[];
+  metaSummary: string;
+  summarizedResults: (GoogleSearchResult & {
+    llmSummary: string;
+  })[];
 }
