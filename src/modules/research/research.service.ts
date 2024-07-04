@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { LlmService } from '../creator/llm.service';
-import { ResearchResult } from './dto/research-result.dto';
 import axios from 'axios';
 import { GoogleSearchResult } from './dto/google-search-result.dto';
 import { BrowserService } from '../common/browser.service';
+import { SummarizedResult } from './dto/summarized-result.dto';
 
 @Injectable()
 export class ResearchService {
@@ -18,15 +18,23 @@ export class ResearchService {
     this.browserService.initialize();
   }
 
-  async searchAndSummarize(topic: string): Promise<ResearchResult> {
-    const searchResults = await this.fetchSearchResults(topic);
-    const summarizedResults = await this.summarizeEachResult(searchResults);
-    const metaSummary = await this.summarizeResults(summarizedResults);
+  async searchAndSummarize(topic: string) {
+    try {
+      const searchResults = await this.fetchSearchResults(topic);
+      const searchResultPromises = searchResults.map((result) => {
+        return new Promise<SummarizedResult>((resolve) =>
+          resolve({
+            ...result,
+            llmSummary: `Fetching llm summary....`,
+          }),
+        );
+      });
 
-    return {
-      metaSummary,
-      summarizedResults,
-    };
+      const summaryPromises = await this.summarizeEachResult(searchResults);
+      return [...searchResultPromises, ...summaryPromises];
+    } catch (error) {
+      console.error('Error during research:', error);
+    }
   }
 
   // Implement search functionality using a search engine API (Google, Bing, etc.)
@@ -45,24 +53,22 @@ export class ResearchService {
   }
 
   // Implement summarization using your LLM service for each result
-  private async summarizeEachResult(
-    searchResults: GoogleSearchResult[],
-  ): Promise<(GoogleSearchResult & { llmSummary: string })[]> {
+  private async summarizeEachResult(searchResults: GoogleSearchResult[]) {
     const promises = searchResults.map(async (result) => {
       try {
         const textContent = await this.fetchTextContent(result.link);
         const summary = await this.llmService.summarize(textContent);
-        return {
-          ...result,
-          llmSummary: summary,
-        };
+        return { ...result, llmSummary: summary };
       } catch (error) {
         console.error(`Error fetching content for ${result.link}: ${error}`);
-        return { ...result, llmSummary: 'Error fetching content' }; // Return a placeholder summary if there's an error
+        return {
+          ...result,
+          llmSummary: 'Error fetching content',
+        } as SummarizedResult;
       }
     });
 
-    return Promise.all(promises); // Wait for all summaries to be fetched
+    return promises; // Resolve all promises concurrently
   }
 
   // Implement fetching text content from a URL
@@ -85,7 +91,7 @@ export class ResearchService {
   }
 
   // Implement summarization using your LLM service for the summaries
-  private async summarizeResults(
+  async summarizeResults(
     summaries: (GoogleSearchResult & { llmSummary: string })[],
   ): Promise<string> {
     const filteredSummaries = summaries.filter(
