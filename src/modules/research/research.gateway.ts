@@ -53,9 +53,15 @@ export class ResearchGateway
       });
 
       // Convert the AsyncGenerator to an iterable
-      const results = await this.researchService.searchAndSummarize(body.topic);
-      results.forEach(async (result) => {
-        sendToClient(client, ToClient.RESULT, await result);
+      const results = await this.researchService.searchAndSummarize(
+        body.topic,
+        {
+          chunk: (resultChunk) =>
+            sendToClient(client, ToClient.CHUNK, resultChunk),
+        },
+      );
+      results.forEach(async () => {
+        // sendToClient(client, ToClient.RESULT, await result);
       });
 
       sendToClient(client, ToClient.COMPLETE, {

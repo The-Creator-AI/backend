@@ -4,6 +4,7 @@ import axios from 'axios';
 import { GoogleSearchResult } from './dto/google-search-result.dto';
 import { BrowserService } from '../common/browser.service';
 import { SummarizedResult } from './dto/summarized-result.dto';
+import { SummarizedResultChunk } from '@The-Creator-AI/fe-be-common/dist/types';
 
 @Injectable()
 export class ResearchService {
@@ -17,7 +18,12 @@ export class ResearchService {
     private readonly browserService: BrowserService,
   ) {}
 
-  async searchAndSummarize(topic: string) {
+  async searchAndSummarize(
+    topic: string,
+    on?: {
+      chunk: (resultChunk: SummarizedResultChunk) => void;
+    },
+  ) {
     try {
       const searchResults = await this.fetchSearchResults(topic);
       const searchResultPromises = searchResults.map((result) => {
@@ -29,7 +35,9 @@ export class ResearchService {
         );
       });
 
-      const summaryPromises = await this.summarizeEachResult(searchResults);
+      const summaryPromises = await this.summarizeEachResult(searchResults, {
+        chunk: (result) => on?.chunk(result),
+      });
       return [...searchResultPromises, ...summaryPromises];
     } catch (error) {
       console.error('Error during research:', error);
@@ -52,11 +60,18 @@ export class ResearchService {
   }
 
   // Implement summarization using your LLM service for each result
-  private async summarizeEachResult(searchResults: GoogleSearchResult[]) {
+  private async summarizeEachResult(
+    searchResults: GoogleSearchResult[],
+    on?: {
+      chunk: (resultChunk: SummarizedResultChunk) => void;
+    },
+  ) {
     const promises = searchResults.map(async (result) => {
       try {
         const textContent = await this.fetchTextContent(result.link);
-        const summary = await this.llmService.summarize(textContent);
+        const summary = await this.llmService.summarize(textContent, {
+          chunk: (chunk) => on?.chunk({ ...result, chunk }),
+        });
         return { ...result, llmSummary: summary };
       } catch (error) {
         console.error(`Error fetching content for ${result.link}: ${error}`);
@@ -92,6 +107,9 @@ export class ResearchService {
   // Implement summarization using your LLM service for the summaries
   async summarizeResults(
     summaries: (GoogleSearchResult & { llmSummary: string })[],
+    on?: {
+      chunk: (chunk: string) => void;
+    },
   ): Promise<string> {
     const filteredSummaries = summaries.filter(
       (summary) => summary.llmSummary !== 'Error fetching content',
@@ -103,6 +121,9 @@ export class ResearchService {
             `Title: ${summary.title}\nSummary: \n\n${summary.llmSummary}`,
         )
         .join('\n\n'),
+      {
+        chunk: on?.chunk,
+      },
     );
   }
 }

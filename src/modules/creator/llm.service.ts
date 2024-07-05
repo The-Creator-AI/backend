@@ -82,11 +82,16 @@ export class LlmService {
     }
   }
 
-  async summarize(text: string): Promise<string> {
+  async summarize(
+    text: string,
+    on?: { chunk?: (chunk: string) => void },
+  ): Promise<string> {
     const prompt = `Summarize this text: \n\n\n${text}`;
     const { type } = this.getApiKey();
     if (type === 'gemini') {
-      return this.sendPromptToGemini(prompt);
+      return this.sendPromptToGemini(prompt, {
+        chunk: on?.chunk,
+      });
     } else if (type === 'openai') {
       return this.sendPromptToOpenAI(prompt);
     } else {
@@ -96,7 +101,12 @@ export class LlmService {
     }
   }
 
-  private async sendPromptToGemini(prompt: string): Promise<string> {
+  private async sendPromptToGemini(
+    prompt: string,
+    on?: {
+      chunk?: (chunk: string) => void;
+    },
+  ): Promise<string> {
     if (!this.geminiApiKey) {
       throw new Error('GEMINI_API_KEY not set in environment variables.');
     }
@@ -139,6 +149,7 @@ export class LlmService {
         while (retry) {
           try {
             for await (const chunk of response.stream) {
+              on?.chunk && on.chunk(chunk.text());
               responseText += chunk.text();
               console.log(chunk.text());
             }
