@@ -60,8 +60,8 @@ export class ResearchGateway
             sendToClient(client, ToClient.CHUNK, resultChunk),
         },
       );
-      results.forEach(async () => {
-        // sendToClient(client, ToClient.RESULT, await result);
+      results.forEach(async (result) => {
+        sendToClient(client, ToClient.RESULT, await result);
       });
 
       sendToClient(client, ToClient.COMPLETE, {
