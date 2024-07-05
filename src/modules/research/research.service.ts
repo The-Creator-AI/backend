@@ -11,12 +11,11 @@ export class ResearchService {
     process.env.GOOGLE_SEARCH__KEY;
   private readonly googleSearchEngineId: string | undefined =
     process.env.GOOGLE_SEARCH__ENGINE_ID;
+
   constructor(
     private readonly llmService: LlmService,
     private readonly browserService: BrowserService,
-  ) {
-    this.browserService.initialize();
-  }
+  ) {}
 
   async searchAndSummarize(topic: string) {
     try {

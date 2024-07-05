@@ -11,6 +11,10 @@ export class BrowserService {
   private browser: puppeteer.Browser | undefined;
   private tabs: BrowserTab[] = [];
 
+  constructor() {
+    this.initialize();
+  }
+
   async destructor() {
     await this.closeAllTabs();
     await this.close();
@@ -18,20 +22,25 @@ export class BrowserService {
 
   async initialize() {
     this.browser = await puppeteer.launch({
-      headless: false,
+      headless: true,
       args: ['--disable-features=site-per-process'],
     });
   }
 
   async getTab(): Promise<puppeteer.Page> {
-    const availableTab = this.tabs.find((tab) => !tab.isBusy);
-    if (availableTab) {
-      availableTab.isBusy = true;
-      return availableTab.page;
-    } else {
-      const newTab = await this.createNewTab();
-      newTab.isBusy = true;
-      return newTab.page;
+    try {
+      const availableTab = this.tabs.find((tab) => !tab.isBusy);
+      if (availableTab) {
+        availableTab.isBusy = true;
+        return availableTab.page;
+      } else {
+        const newTab = await this.createNewTab();
+        newTab.isBusy = true;
+        return newTab.page;
+      }
+    } catch (error) {
+      console.error('Error getting tab:', error);
+      throw error;
     }
   }
 
