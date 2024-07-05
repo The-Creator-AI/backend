@@ -11,8 +11,8 @@ import { Socket, Server } from 'socket.io';
 import { ResearchService } from './research.service';
 import {
   ChannelBody,
-  ClientToServerChannel,
-  ServerToClientChannel,
+  ToServer,
+  ToClient,
   sendToClient,
 } from '@The-Creator-AI/fe-be-common';
 
@@ -41,29 +41,29 @@ export class ResearchGateway
     console.log(`Client disconnected: ${client.id}`);
   }
 
-  @SubscribeMessage(ClientToServerChannel.search)
+  @SubscribeMessage(ToServer.SEARCH)
   async handleResearch(
-    @MessageBody() body: ChannelBody<ClientToServerChannel.search>,
+    @MessageBody() body: ChannelBody<ToServer.SEARCH>,
     @ConnectedSocket() client: Socket,
   ) {
     console.log({ body });
     try {
-      sendToClient(client, ServerToClientChannel.progress, {
+      sendToClient(client, ToClient.PROGRESS, {
         message: 'Fetching search results...',
       });
 
       // Convert the AsyncGenerator to an iterable
       const results = await this.researchService.searchAndSummarize(body.topic);
       results.forEach(async (result) => {
-        sendToClient(client, ServerToClientChannel.result, await result);
+        sendToClient(client, ToClient.RESULT, await result);
       });
 
-      sendToClient(client, ServerToClientChannel.complete, {
+      sendToClient(client, ToClient.COMPLETE, {
         message: 'Search completed',
       });
     } catch (error) {
       console.error('Error during research:', error);
-      sendToClient(client, ServerToClientChannel.error, {
+      sendToClient(client, ToClient.ERROR, {
         message: 'An error occurred during research',
       });
     }
