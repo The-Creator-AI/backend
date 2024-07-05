@@ -9,6 +9,12 @@ import {
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
 import { ResearchService } from './research.service';
+import {
+  ChannelBody,
+  ClientToServerChannel,
+  ServerToClientChannel,
+  sendToClient,
+} from '@The-Creator-AI/fe-be-common';
 
 @WebSocketGateway({
   namespace: 'research',
@@ -35,24 +41,31 @@ export class ResearchGateway
     console.log(`Client disconnected: ${client.id}`);
   }
 
-  @SubscribeMessage('search')
+  @SubscribeMessage(ClientToServerChannel.search)
   async handleResearch(
-    @MessageBody() topic: string,
+    @MessageBody() body: ChannelBody<ClientToServerChannel.search>,
     @ConnectedSocket() client: Socket,
   ) {
+    console.log({ body });
     try {
-      client.emit('progress', { message: 'Fetching search results...' });
-
-      // Convert the AsyncGenerator to an iterable
-      const results = await this.researchService.searchAndSummarize(topic);
-      results.forEach(async (result) => {
-        client.emit('result', await result);
+      sendToClient(client, ServerToClientChannel.progress, {
+        message: 'Fetching search results...',
       });
 
-      client.emit('complete');
+      // Convert the AsyncGenerator to an iterable
+      const results = await this.researchService.searchAndSummarize(body.topic);
+      results.forEach(async (result) => {
+        sendToClient(client, ServerToClientChannel.result, await result);
+      });
+
+      sendToClient(client, ServerToClientChannel.complete, {
+        message: 'Search completed',
+      });
     } catch (error) {
       console.error('Error during research:', error);
-      client.emit('error', { message: 'An error occurred during research' });
+      sendToClient(client, ServerToClientChannel.error, {
+        message: 'An error occurred during research',
+      });
     }
   }
 }
