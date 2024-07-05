@@ -73,15 +73,8 @@ export class CreatorGateway
         message: response,
         model: modelName,
       });
-
-      sendToClient(client, ToClient.COMPLETE, {
-        message: 'Completed',
-      });
     } catch (error) {
       console.error('Error during research:', error);
-      sendToClient(client, ToClient.ERROR, {
-        message: 'An error occurred during research',
-      });
     }
   }
 
@@ -96,9 +89,6 @@ export class CreatorGateway
       sendToClient(client, ToClient.FILE_CONTENT, fileContent);
     } catch (error) {
       console.error('Error fetching file content:', error);
-      sendToClient(client, ToClient.ERROR, {
-        message: 'An error occurred while fetching file content',
-      });
     }
   }
 }
