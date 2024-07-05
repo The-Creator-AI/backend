@@ -51,11 +51,16 @@ export class LlmService {
   async sendPrompt(
     chatHistory: { user: string; message: string }[],
     selectedFiles: string[] = [],
+    on?: {
+      chunk?: (chunk: string) => void;
+    },
   ): Promise<string> {
     const prompt = await this.buildPrompt(chatHistory, selectedFiles);
     const { type } = this.getApiKey();
     if (type === 'gemini') {
-      return this.sendPromptToGemini(prompt);
+      return this.sendPromptToGemini(prompt, {
+        chunk: on?.chunk,
+      });
     } else if (type === 'openai') {
       return this.sendPromptToOpenAI(prompt);
     } else {

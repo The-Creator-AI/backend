@@ -17,7 +17,6 @@ import {
 } from '@The-Creator-AI/fe-be-common';
 
 @WebSocketGateway({
-  namespace: 'research',
   cors: {
     origin: '*',
   },

@@ -1,8 +1,11 @@
 import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { CreatorService } from './creator.service';
 import { LlmService } from './llm.service';
-import { ChatMessageType } from '@The-Creator-AI/fe-be-common/dist/types';
-import { v4 as uuidv4 } from "uuid";
+import {
+  ChatMessageType,
+  UserMessage,
+} from '@The-Creator-AI/fe-be-common/dist/types';
+import { v4 as uuidv4 } from 'uuid';
 
 @Controller('creator')
 export class CreatorController {
@@ -14,10 +17,7 @@ export class CreatorController {
   @Post('chat')
   async chat(
     @Body()
-    message: {
-      chatHistory: ChatMessageType[];
-      selectedFiles: string[];
-    },
+    message: UserMessage,
   ): Promise<ChatMessageType> {
     const response = await this.llmService.sendPrompt(
       message.chatHistory,
@@ -35,13 +35,7 @@ export class CreatorController {
   @Post('token-count')
   async tokenCount(
     @Body()
-    message: {
-      chatHistory: {
-        user: string;
-        message: string;
-      }[];
-      selectedFiles: string[];
-    },
+    message: UserMessage,
   ): Promise<number> {
     return this.llmService.getTokenCount(
       message.chatHistory,
