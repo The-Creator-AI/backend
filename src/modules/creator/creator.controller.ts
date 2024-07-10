@@ -49,8 +49,11 @@ export class CreatorController {
     @Query('loadShallow') loadShallow?: boolean,
   ) {
     const workingDirectory = process.env.CUR_WRK_DIR;
-    console.log({ workingDirectory });
     const currentPath = dir || workingDirectory;
+    console.log({ currentPath });
+    if (!currentPath) {
+      return {};
+    }
     const children = this.creatorService.getDirectoryStructure(
       currentPath,
       loadShallow,
