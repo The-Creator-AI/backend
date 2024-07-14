@@ -45,10 +45,16 @@ export class CreatorService {
     const processedPaths = new Set<string>();
 
     const readContentRecursive = (filePath: string) => {
-      if (processedPaths.has(filePath)) {
+      try {
+        if (processedPaths.has(filePath)) {
+          return;
+        }
+        processedPaths.add(filePath);
+      } catch (error) {
+        console.error(`Error reading file ${filePath}: ${error}`);
+        processedPaths.add(filePath);
         return;
       }
-      processedPaths.add(filePath);
 
       if (fs.statSync(filePath).isDirectory()) {
         fs.readdirSync(filePath).forEach((file) =>
