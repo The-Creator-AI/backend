@@ -1,0 +1,11 @@
+{
+    "title": "Research",
+    "description": "The Research feature leverages external search engines and LLMs to provide users with comprehensive and insightful information on a given topic, enhancing their coding and research workflows.",
+    "acceptance_criteria": [
+        "Users can submit a search query to the backend, specifying the topic they want to research.",
+        "The backend application retrieves relevant search results from a search engine (e.g., Google Custom Search) based on the user's query.",
+        "The backend application utilizes an LLM to summarize each search result, providing concise and informative summaries to the user.",
+        "The backend application provides a summary of the entire research topic based on the summaries of individual results.",
+        "The backend application supports streaming of research results, allowing the frontend to display results progressively as they become available."
+    ]
+}
