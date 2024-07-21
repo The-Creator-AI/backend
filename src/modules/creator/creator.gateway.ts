@@ -67,6 +67,7 @@ export class CreatorGateway
             }),
         },
       );
+
       sendToClient(client, ToClient.BOT_MESSAGE, {
         uuid,
         user: 'bot',
@@ -89,6 +90,29 @@ export class CreatorGateway
       sendToClient(client, ToClient.FILE_CONTENT, fileContent);
     } catch (error) {
       console.error('Error fetching file content:', error);
+    }
+  }
+
+  @SubscribeMessage(ToServer.SAVE_PLAN)
+  async handleSavePlan(
+    @MessageBody() body: ChannelBody<ToServer.SAVE_PLAN>,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      await this.creatorService.savePlan(body);
+      this.handleGetPlans(client);
+    } catch (error) {
+      console.error('Error saving plan:', error);
+    }
+  }
+
+  @SubscribeMessage(ToServer.GET_PLANS)
+  async handleGetPlans(@ConnectedSocket() client: Socket) {
+    try {
+      const plans = await this.creatorService.fetchPlans();
+      sendToClient(client, ToClient.PLANS, plans);
+    } catch (error) {
+      console.error('Error fetching plans:', error);
     }
   }
 }

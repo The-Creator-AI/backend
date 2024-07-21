@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PlanEntity } from './entities/plan.entity';
+import { PlanRepository } from './repositories/plan.repository';
+import { SaveUpdatePlanDto } from './dto/save-update-plan.dto';
 
 @Injectable()
 export class CreatorService {
+  constructor(private readonly planRepository: PlanRepository) {}
+
   getDirectoryStructure(dir: string, loadShallow: boolean = false, level = 0) {
     if (!dir) {
       return [];
@@ -72,5 +77,13 @@ export class CreatorService {
     filePaths.forEach((filePath) => readContentRecursive(filePath));
 
     return fileContents;
+  }
+
+  async savePlan(plan: SaveUpdatePlanDto): Promise<PlanEntity> {
+    return this.planRepository.save(plan);
+  }
+
+  async fetchPlans(): Promise<PlanEntity[]> {
+    return this.planRepository.findAllPlans();
   }
 }
