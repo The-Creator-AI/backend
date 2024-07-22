@@ -84,6 +84,13 @@ export class CreatorService {
   }
 
   async fetchPlans(): Promise<PlanEntity[]> {
-    return this.planRepository.findAllPlans();
+    const plans = await this.planRepository.findAllPlans();
+    return plans.map((plan) => ({
+      ...plan,
+      code_plan:
+        typeof plan.code_plan === 'string'
+          ? JSON.parse(plan.code_plan)
+          : plan.code_plan,
+    }));
   }
 }
