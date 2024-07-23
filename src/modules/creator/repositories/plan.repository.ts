@@ -30,6 +30,10 @@ export class PlanRepository {
   }
 
   async findAllPlans(): Promise<PlanEntity[]> {
-    return this.planRepository.find({});
+    return this.planRepository.find({
+      order: {
+        id: 'DESC',
+      },
+    });
   }
 }

@@ -30,6 +30,10 @@ export class ChatRepository {
   }
 
   async findAllChats(): Promise<ChatEntity[]> {
-    return this.chatRepository.find({});
+    return this.chatRepository.find({
+      order: {
+        id: 'DESC',
+      },
+    });
   }
 }
