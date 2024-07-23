@@ -89,6 +89,10 @@ export class CreatorService {
     return this.planRepository.save(plan);
   }
 
+  async deletePlan(id: number): Promise<void> {
+    await this.planRepository.delete(id);
+  }
+
   async fetchPlans(): Promise<PlanEntity[]> {
     const plans = await this.planRepository.findAllPlans();
     return plans.map((plan) => ({
@@ -102,6 +106,10 @@ export class CreatorService {
 
   async saveChat(chat: ChatType): Promise<ChatEntity> {
     return this.chatRepository.save(chat);
+  }
+
+  async deleteChat(id: number): Promise<void> {
+    await this.chatRepository.delete(id);
   }
 
   async fetchChats(): Promise<ChatEntity[]> {

@@ -107,6 +107,19 @@ export class CreatorGateway
     }
   }
 
+  @SubscribeMessage(ToServer.DELETE_PLAN)
+  async handleDeletePlan(
+    @MessageBody() body: ChannelBody<ToServer.DELETE_PLAN>,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      await this.creatorService.deletePlan(body.id);
+      this.handleGetPlans(client);
+    } catch (error) {
+      console.error('Error deleting plan:', error);
+    }
+  }
+
   @SubscribeMessage(ToServer.GET_PLANS)
   async handleGetPlans(@ConnectedSocket() client: Socket) {
     try {
@@ -127,6 +140,19 @@ export class CreatorGateway
       this.handleGetChats(client);
     } catch (error) {
       console.error('Error saving chat:', error);
+    }
+  }
+
+  @SubscribeMessage(ToServer.DELETE_CHAT)
+  async handleDeleteChat(
+    @MessageBody() body: ChannelBody<ToServer.DELETE_CHAT>,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      await this.creatorService.deleteChat(body.id);
+      this.handleGetChats(client);
+    } catch (error) {
+      console.error('Error deleting chat:', error);
     }
   }
 
