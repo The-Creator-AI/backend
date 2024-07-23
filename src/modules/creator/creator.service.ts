@@ -4,10 +4,16 @@ import * as path from 'path';
 import { PlanEntity } from './entities/plan.entity';
 import { PlanRepository } from './repositories/plan.repository';
 import { SaveUpdatePlanDto } from './dto/save-update-plan.dto';
+import { ChatEntity } from './entities/chat.entity';
+import { ChatType } from '@The-Creator-AI/fe-be-common/dist/types';
+import { ChatRepository } from './repositories/chat.repository';
 
 @Injectable()
 export class CreatorService {
-  constructor(private readonly planRepository: PlanRepository) {}
+  constructor(
+    private readonly planRepository: PlanRepository,
+    private readonly chatRepository: ChatRepository,
+  ) {}
 
   getDirectoryStructure(dir: string, loadShallow: boolean = false, level = 0) {
     if (!dir) {
@@ -91,6 +97,21 @@ export class CreatorService {
         typeof plan.code_plan === 'string'
           ? JSON.parse(plan.code_plan)
           : plan.code_plan,
+    }));
+  }
+
+  async saveChat(chat: ChatType): Promise<ChatEntity> {
+    return this.chatRepository.save(chat);
+  }
+
+  async fetchChats(): Promise<ChatEntity[]> {
+    const chats = await this.chatRepository.findAllChats();
+    return chats.map((chat) => ({
+      ...chat,
+      chat_history:
+        typeof chat.chat_history === 'string'
+          ? JSON.parse(chat.chat_history)
+          : chat.chat_history,
     }));
   }
 }

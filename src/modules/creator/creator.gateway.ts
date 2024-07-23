@@ -9,14 +9,15 @@ import {
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
 import { LlmService } from '../creator/llm.service';
+import { CreatorService } from '../creator/creator.service';
+import { v4 as uuidv4 } from 'uuid';
+import { SaveUpdateChatDto } from '../creator/dto/save-update-chat.dto';
 import {
   ChannelBody,
   ToServer,
   ToClient,
   sendToClient,
 } from '@The-Creator-AI/fe-be-common';
-import { CreatorService } from '../creator/creator.service';
-import { v4 as uuidv4 } from 'uuid';
 
 @WebSocketGateway({
   cors: {
@@ -113,6 +114,29 @@ export class CreatorGateway
       sendToClient(client, ToClient.PLANS, plans);
     } catch (error) {
       console.error('Error fetching plans:', error);
+    }
+  }
+
+  @SubscribeMessage(ToServer.SAVE_CHAT)
+  async handleSaveChat(
+    @MessageBody() body: SaveUpdateChatDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      await this.creatorService.saveChat(body);
+      this.handleGetChats(client);
+    } catch (error) {
+      console.error('Error saving chat:', error);
+    }
+  }
+
+  @SubscribeMessage(ToServer.GET_CHATS)
+  async handleGetChats(@ConnectedSocket() client: Socket) {
+    try {
+      const chats = await this.creatorService.fetchChats();
+      sendToClient(client, ToClient.CHATS, chats);
+    } catch (error) {
+      console.error('Error fetching chats:', error);
     }
   }
 }
