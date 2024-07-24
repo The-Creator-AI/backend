@@ -17,7 +17,7 @@ export class LlmService {
 
   private geminiProModel: string = 'models/gemini-1.5-pro-latest'; // Default model
   private geminiFlashModel: string = 'gemini-1.5-flash-latest';
-  private openaiModel: string = 'gpt-3.5-turbo';
+  private openaiModel: string = 'gpt-4o-mini';
 
   private currentModel: string = this.geminiProModel; // Track the current model being used
 
@@ -43,8 +43,8 @@ export class LlmService {
       prompt += `${message.user}: ${message.message}\n`;
     });
 
-    console.log(`Prompt:\n\n\n`);
-    console.log(prompt);
+    // console.log(`Prompt:\n\n\n`);
+    // console.log(prompt);
     return prompt;
   }
 
@@ -56,13 +56,17 @@ export class LlmService {
     },
   ): Promise<string> {
     const prompt = await this.buildPrompt(chatHistory, selectedFiles);
+    console.log(`Prompt:\n\n\n`);
+    console.log(prompt);
     const { type } = this.getApiKey();
     if (type === 'gemini') {
       return this.sendPromptToGemini(prompt, {
         chunk: on?.chunk,
       });
     } else if (type === 'openai') {
-      return this.sendPromptToOpenAI(prompt);
+      return this.sendPromptToOpenAI(prompt, {
+        chunk: on?.chunk,
+      });
     } else {
       throw new Error(
         'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.',
@@ -188,7 +192,12 @@ export class LlmService {
     return this.currentModel; // Access currentModel here
   }
 
-  private async sendPromptToOpenAI(prompt: string): Promise<string> {
+  private async sendPromptToOpenAI(
+    prompt: string,
+    on?: {
+      chunk?: (chunk: string) => void;
+    },
+  ): Promise<string> {
     if (!this.openaiApiKey) {
       throw new Error('OPENAI_API_KEY not set in environment variables.');
     }
@@ -198,12 +207,21 @@ export class LlmService {
     });
 
     this.currentModel = this.openaiModel;
-    const response = await model.completions.create({
+    const response = await model.chat.completions.create({
       model: this.openaiModel,
-      prompt: prompt,
+      messages: [{ role: 'user', content: prompt }],
+      stream: true,
     });
 
-    return response.choices[0].text || '';
+    // return response.choices[0].message?.content || '';
+
+    let responseText = '';
+    for await (const chunk of response) {
+      on?.chunk && on.chunk(chunk.choices[0].delta?.content || '');
+      responseText += chunk.choices[0].delta?.content || '';
+      console.log(chunk.choices[0].delta?.content || '');
+    }
+    return responseText;
   }
 
   private getApiKey() {
@@ -214,8 +232,10 @@ export class LlmService {
     }
 
     if (this.geminiApiKey) {
+      this.currentModel = this.geminiProModel;
       return { type: 'gemini', apiKey: this.geminiApiKey };
     } else if (this.openaiApiKey) {
+      this.currentModel = this.openaiModel;
       return { type: 'openai', apiKey: this.openaiApiKey };
     } else {
       throw new Error(`Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.
