@@ -56,8 +56,8 @@ export class LlmService {
     },
   ): Promise<string> {
     const prompt = await this.buildPrompt(chatHistory, selectedFiles);
-    console.log(`Prompt:\n\n\n`);
-    console.log(prompt);
+    // console.log(`Prompt:\n\n\n`);
+    // console.log(prompt);
     const { type } = this.getApiKey();
     if (type === 'gemini') {
       return this.sendPromptToGemini(prompt, {
@@ -160,7 +160,7 @@ export class LlmService {
             for await (const chunk of response.stream) {
               on?.chunk && on.chunk(chunk.text());
               responseText += chunk.text();
-              console.log(chunk.text());
+              // console.log(chunk.text());
             }
             retry = false;
           } catch (e: any) {
@@ -219,7 +219,7 @@ export class LlmService {
     for await (const chunk of response) {
       on?.chunk && on.chunk(chunk.choices[0].delta?.content || '');
       responseText += chunk.choices[0].delta?.content || '';
-      console.log(chunk.choices[0].delta?.content || '');
+      // console.log(chunk.choices[0].delta?.content || '');
     }
     return responseText;
   }

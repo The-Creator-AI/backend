@@ -18,11 +18,18 @@ export class ChatRepository {
   }
 
   async save(chat: SaveUpdateChatDto) {
-    return this.chatRepository.save(chat);
+    return this.chatRepository.save({
+      ...chat,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
   }
 
   async update(id: number, chat: SaveUpdateChatDto): Promise<UpdateResult> {
-    return this.chatRepository.update(id, chat);
+    return this.chatRepository.update(id, {
+      ...chat,
+      updated_at: new Date(),
+    });
   }
 
   async delete(id: number): Promise<DeleteResult> {
@@ -32,7 +39,7 @@ export class ChatRepository {
   async findAllChats(): Promise<ChatEntity[]> {
     return this.chatRepository.find({
       order: {
-        id: 'DESC',
+        updated_at: 'DESC',
       },
     });
   }

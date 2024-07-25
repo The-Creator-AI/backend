@@ -18,11 +18,18 @@ export class PlanRepository {
   }
 
   async save(plan: SaveUpdatePlanDto): Promise<PlanEntity> {
-    return this.planRepository.save(plan);
+    return this.planRepository.save({
+      ...plan,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
   }
 
   async update(id: number, plan: SaveUpdatePlanDto): Promise<UpdateResult> {
-    return this.planRepository.update(id, plan);
+    return this.planRepository.update(id, {
+      ...plan,
+      updated_at: new Date(),
+    });
   }
 
   async delete(id: number): Promise<DeleteResult> {

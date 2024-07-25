@@ -6,6 +6,12 @@ export class PlanEntity implements PlanType {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column()
+  created_at: Date;
+
+  @Column()
+  updated_at: Date;
+
   @Column({ unique: true })
   title: string;
 
