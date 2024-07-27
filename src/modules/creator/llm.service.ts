@@ -1,14 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import {
-  GoogleGenerativeAI,
-  HarmBlockThreshold,
-  HarmCategory,
-} from '@google/generative-ai';
-import * as openai from 'openai';
 import { CreatorService } from './creator.service';
-import { encoding_for_model } from 'tiktoken';
-import Anthropic from '@anthropic-ai/sdk';
-import * as anthropicTokenCounter from '@anthropic-ai/tokenizer';
+import { GeminiService } from './llm-services/gemini.service';
+import { OpenAIService } from './llm-services/openai.service';
+import { ClaudeService } from './llm-services/claude.service';
 
 @Injectable()
 export class LlmService {
@@ -19,37 +13,33 @@ export class LlmService {
   private readonly claudeApiKey: string | undefined =
     process.env.CLAUDE_API_KEY;
 
-  private geminiProModel: string = 'models/gemini-1.5-pro-latest'; // Default model
-  private geminiFlashModel: string = 'gemini-1.5-flash-latest';
-  private openaiModel: string = 'gpt-4o-mini';
-  private claudeModel: string = 'claude-3.5-sonnet';
+  private currentModel: string = 'gemini-1.5-pro-latest'; // Default model
 
-  private currentModel: string = this.geminiProModel; // Track the current model being used
-
-  constructor(private readonly creatorService: CreatorService) {}
+  constructor(
+    private readonly creatorService: CreatorService,
+    private readonly geminiService: GeminiService,
+    private readonly openAIService: OpenAIService,
+    private readonly claudeService: ClaudeService,
+  ) {}
 
   private async buildPrompt(
     chatHistory: { user: string; message: string }[],
     selectedFiles: string[] = [],
   ): Promise<string> {
-    // Read selected files content before sending the prompt
     const fileContents =
       this.creatorService.readSelectedFilesContent(selectedFiles);
 
-    // Append file contents to prompt
     let prompt = '';
     for (const filePath in fileContents) {
       prompt += `\n\n\`\`\`
-    File: ${filePath}
-    ${fileContents[filePath]}
-    \`\`\`\n\n`;
+      File: ${filePath}
+      ${fileContents[filePath]}
+      \`\`\`\n\n`;
     }
     chatHistory.forEach((message) => {
       prompt += `${message.user}: ${message.message}\n`;
     });
 
-    // console.log(`Prompt:\n\n\n`);
-    // console.log(prompt);
     return prompt;
   }
 
@@ -61,25 +51,19 @@ export class LlmService {
     },
   ): Promise<string> {
     const prompt = await this.buildPrompt(chatHistory, selectedFiles);
-    // console.log(`Prompt:\n\n\n`);
-    // console.log(prompt);
     const { type } = this.getApiKey();
-    if (type === 'gemini') {
-      return this.sendPromptToGemini(prompt, {
-        chunk: on?.chunk,
-      });
-    } else if (type === 'openai') {
-      return this.sendPromptToOpenAI(prompt, {
-        chunk: on?.chunk,
-      });
-    } else if (type === 'claude') {
-      return this.sendPromptToClaude(prompt, {
-        chunk: on?.chunk,
-      });
-    } else {
-      throw new Error(
-        'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY or CLAUDE_API_KEY environment variable.',
-      );
+
+    switch (type) {
+      case 'gemini':
+        return this.geminiService.sendPrompt(prompt, { chunk: on?.chunk });
+      case 'openai':
+        return this.openAIService.sendPrompt(prompt, { chunk: on?.chunk });
+      case 'claude':
+        return this.claudeService.sendPrompt(prompt, { chunk: on?.chunk });
+      default:
+        throw new Error(
+          'No API key found. Please set either GEMINI_API_KEY, OPENAI_API_KEY, or CLAUDE_API_KEY environment variable.',
+        );
     }
   }
 
@@ -89,16 +73,18 @@ export class LlmService {
   ): Promise<number> {
     const prompt = await this.buildPrompt(chatHistory, selectedFiles);
     const { type } = this.getApiKey();
-    if (type === 'gemini') {
-      return this.getTokenCountToGemini(prompt);
-    } else if (type === 'openai') {
-      return this.getTokenCountToOpenAI(prompt);
-    } else if (type === 'claude') {
-      return this.getTokenCountToClaude(prompt);
-    } else {
-      throw new Error(
-        'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY or CLAUDE_API_KEY environment variable.',
-      );
+
+    switch (type) {
+      case 'gemini':
+        return this.geminiService.getTokenCount(prompt);
+      case 'openai':
+        return this.openAIService.getTokenCount(prompt);
+      case 'claude':
+        return this.claudeService.getTokenCount(prompt);
+      default:
+        throw new Error(
+          'No API key found. Please set either GEMINI_API_KEY, OPENAI_API_KEY, or CLAUDE_API_KEY environment variable.',
+        );
     }
   }
 
@@ -108,207 +94,43 @@ export class LlmService {
   ): Promise<string> {
     const prompt = `Summarize this text: \n\n\n${text}`;
     const { type } = this.getApiKey();
-    if (type === 'gemini') {
-      return this.sendPromptToGemini(prompt, {
-        chunk: on?.chunk,
-      });
-    } else if (type === 'openai') {
-      return this.sendPromptToOpenAI(prompt);
-    } else if (type === 'claude') {
-      return this.sendPromptToClaude(prompt, {
-        chunk: on?.chunk,
-      });
-    } else {
-      throw new Error(
-        'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY or CLAUDE_API_KEY environment variable.',
-      );
+
+    switch (type) {
+      case 'gemini':
+        return this.geminiService.sendPrompt(prompt, { chunk: on?.chunk });
+      case 'openai':
+        return this.openAIService.sendPrompt(prompt);
+      case 'claude':
+        return this.claudeService.sendPrompt(prompt, { chunk: on?.chunk });
+      default:
+        throw new Error(
+          'No API key found. Please set either GEMINI_API_KEY, OPENAI_API_KEY, or CLAUDE_API_KEY environment variable.',
+        );
     }
-  }
-
-  private async sendPromptToGemini(
-    prompt: string,
-    on?: {
-      chunk?: (chunk: string) => void;
-    },
-  ): Promise<string> {
-    if (!this.geminiApiKey) {
-      throw new Error('GEMINI_API_KEY not set in environment variables.');
-    }
-
-    const genAI = new GoogleGenerativeAI(this.geminiApiKey);
-    let debounce = 0;
-    let attempts = 0;
-    let responseText = '';
-
-    while (attempts < 3) {
-      attempts++;
-      if (debounce > 0) {
-        console.log(`Waiting for ${Math.floor(debounce / 1000)} seconds...`);
-      }
-      console.log(`Using model: ${this.currentModel}`);
-      await new Promise((resolve) => setTimeout(resolve, debounce));
-      try {
-        const gemini = genAI.getGenerativeModel({
-          model: this.currentModel,
-        }); // Use currentModel here
-        const response = await gemini.generateContentStream({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'text/plain',
-          },
-          safetySettings: [
-            {
-              category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-              threshold: HarmBlockThreshold.BLOCK_NONE,
-            },
-          ],
-        });
-
-        let retry = true;
-        while (retry) {
-          try {
-            for await (const chunk of response.stream) {
-              on?.chunk && on.chunk(chunk.text());
-              responseText += chunk.text();
-              // console.log(chunk.text());
-            }
-            retry = false;
-          } catch (e: any) {
-            retry = true;
-            console.log(e);
-          }
-        }
-        debounce = 0;
-        return responseText;
-      } catch (e: any) {
-        debounce += 5000;
-        if (e.status === 429 && this.currentModel === this.geminiProModel) {
-          this.currentModel = this.geminiFlashModel; // Update currentModel
-          console.log(
-            `${this.geminiProModel} limit reached, trying with ${this.geminiFlashModel}`,
-          );
-          continue;
-        }
-        console.log(e);
-        // Handle other errors, e.g., throw an error, return a default message, etc.
-      }
-    }
-    throw new Error(
-      'Could not get a response from Gemini after multiple attempts.',
-    );
-  }
-
-  private async sendPromptToOpenAI(
-    prompt: string,
-    on?: {
-      chunk?: (chunk: string) => void;
-    },
-  ): Promise<string> {
-    if (!this.openaiApiKey) {
-      throw new Error('OPENAI_API_KEY not set in environment variables.');
-    }
-
-    const model = new openai.OpenAI({
-      apiKey: this.openaiApiKey,
-    });
-
-    this.currentModel = this.openaiModel;
-    const response = await model.chat.completions.create({
-      model: this.openaiModel,
-      messages: [{ role: 'user', content: prompt }],
-      stream: true,
-    });
-
-    // return response.choices[0].message?.content || '';
-
-    let responseText = '';
-    for await (const chunk of response) {
-      on?.chunk && on.chunk(chunk.choices[0].delta?.content || '');
-      responseText += chunk.choices[0].delta?.content || '';
-      // console.log(chunk.choices[0].delta?.content || '');
-    }
-    return responseText;
-  }
-
-  private async sendPromptToClaude(
-    prompt: string,
-    on?: {
-      chunk?: (chunk: string) => void;
-    },
-  ): Promise<string> {
-    if (!this.claudeApiKey) {
-      throw new Error('CLAUDE_API_KEY not set in environment variables.');
-    }
-
-    const client = new Anthropic({
-      apiKey: process.env['ANTHROPIC_API_KEY'], // This is the default and can be omitted
-    });
-    this.currentModel = this.claudeModel;
-    const response = await client.messages
-      .stream({
-        model: this.claudeModel,
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }],
-      })
-      .on('text', (chunk) => {
-        on?.chunk && on.chunk(chunk);
-      });
-
-    const finalMessage = await response.finalMessage();
-    return finalMessage.content[0].type === 'text'
-      ? finalMessage.content[0].text
-      : 'Failed to parse Claude response!';
   }
 
   getModelName(): string {
-    return this.currentModel; // Access currentModel here
+    return this.currentModel;
   }
 
   private getApiKey() {
     if (this.geminiApiKey && this.openaiApiKey && this.claudeApiKey) {
-      console.warn(
-        'Both GEMINI_API_KEY and OPENAI_API_KEY and CLAUDE_API_KEY are set. Using GEMINI_API_KEY.',
-      );
+      console.warn('Multiple API keys found. Defaulting to GEMINI_API_KEY.');
     }
 
     if (this.geminiApiKey) {
-      this.currentModel = this.geminiProModel;
+      this.currentModel = 'gemini-1.5-pro-latest';
       return { type: 'gemini', apiKey: this.geminiApiKey };
     } else if (this.openaiApiKey) {
-      this.currentModel = this.openaiModel;
+      this.currentModel = 'gpt-4o-mini';
       return { type: 'openai', apiKey: this.openaiApiKey };
     } else if (this.claudeApiKey) {
-      this.currentModel = this.claudeModel;
+      this.currentModel = 'claude-3.5-sonnet';
       return { type: 'claude', apiKey: this.claudeApiKey };
     } else {
-      throw new Error(`Please set either GEMINI_API_KEY or OPENAI_API_KEY or CLAUDE_API_KEY environment variable.
-You can get API KEY for Gemini from https://aistudio.google.com/
-            `);
+      throw new Error(
+        'Please set either GEMINI_API_KEY, OPENAI_API_KEY, or CLAUDE_API_KEY environment variable. You can get an API KEY for Gemini from https://aistudio.google.com/',
+      );
     }
-  }
-
-  private async getTokenCountToGemini(prompt: string): Promise<number> {
-    const genAI = new GoogleGenerativeAI(this.geminiApiKey);
-    const gemini = genAI.getGenerativeModel({
-      model: this.currentModel,
-    });
-    return (await gemini.countTokens(prompt)).totalTokens;
-  }
-
-  private async getTokenCountToOpenAI(prompt: string): Promise<number> {
-    const encoder = encoding_for_model('gpt-4');
-
-    const tokens = encoder.encode(prompt);
-    encoder.free();
-    return tokens.length;
-  }
-
-  private async getTokenCountToClaude(prompt: string): Promise<number> {
-    return anthropicTokenCounter.countTokens(prompt);
   }
 }
