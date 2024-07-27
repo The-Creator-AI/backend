@@ -165,4 +165,42 @@ export class CreatorGateway
       console.error('Error fetching chats:', error);
     }
   }
+
+  @SubscribeMessage(ToServer.GET_AGENTS)
+  async handleGetAgents(@ConnectedSocket() client: Socket) {
+    try {
+      const agents = await this.creatorService.fetchAgents();
+      console.log({ agents });
+      sendToClient(client, ToClient.AGENTS, agents);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    }
+  }
+
+  @SubscribeMessage(ToServer.SAVE_AGENT)
+  async handleSaveAgent(
+    @MessageBody() body: ChannelBody<ToServer.SAVE_AGENT>,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      await this.creatorService.saveAgent(body);
+      this.handleGetAgents(client);
+    } catch (error) {
+      console.error('Error saving agent:', error);
+    }
+  }
+
+  @SubscribeMessage(ToServer.DELETE_AGENT)
+  async handleDeleteAgent(
+    @MessageBody() body: ChannelBody<ToServer.DELETE_AGENT>,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      await this.creatorService.deleteAgent(body.id);
+      // You might want to send a message to the client to update their agent list
+      this.handleGetAgents(client);
+    } catch (error) {
+      console.error('Error deleting agent:', error);
+    }
+  }
 }

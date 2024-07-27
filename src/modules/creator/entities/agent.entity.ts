@@ -1,7 +1,8 @@
+import { AgentType } from '@The-Creator-AI/fe-be-common/dist/types';
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'agent' })
-export class AgentEntity extends BaseEntity {
+export class AgentEntity extends BaseEntity implements AgentType {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -16,4 +17,10 @@ export class AgentEntity extends BaseEntity {
 
   @Column()
   systemInstructions: string;
+
+  @Column()
+  editable: boolean;
+
+  @Column()
+  hidden: boolean;
 }

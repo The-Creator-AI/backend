@@ -17,7 +17,7 @@ export class ChatRepository {
     });
   }
 
-  async save(chat: SaveUpdateChatDto) {
+  async create(chat: SaveUpdateChatDto) {
     return this.chatRepository.save({
       ...chat,
       created_at: new Date(),
@@ -39,7 +39,7 @@ export class ChatRepository {
   async findAllChats(): Promise<ChatEntity[]> {
     return this.chatRepository.find({
       order: {
-        updated_at: 'DESC',
+        created_at: 'DESC',
       },
     });
   }

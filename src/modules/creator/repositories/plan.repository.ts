@@ -17,7 +17,7 @@ export class PlanRepository {
     });
   }
 
-  async save(plan: SaveUpdatePlanDto): Promise<PlanEntity> {
+  async create(plan: SaveUpdatePlanDto): Promise<PlanEntity> {
     return this.planRepository.save({
       ...plan,
       created_at: new Date(),
@@ -39,7 +39,7 @@ export class PlanRepository {
   async findAllPlans(): Promise<PlanEntity[]> {
     return this.planRepository.find({
       order: {
-        id: 'DESC',
+        created_at: 'DESC',
       },
     });
   }

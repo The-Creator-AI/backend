@@ -11,9 +11,11 @@ import { ChatEntity } from './entities/chat.entity';
 import { GeminiService } from './llm-services/gemini.service';
 import { OpenAIService } from './llm-services/openai.service';
 import { ClaudeService } from './llm-services/claude.service';
+import { AgentsRepository } from './repositories/agent.repository';
+import { AgentEntity } from './entities/agent.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PlanEntity, ChatEntity])],
+  imports: [TypeOrmModule.forFeature([PlanEntity, ChatEntity, AgentEntity])],
   controllers: [CreatorController],
   providers: [
     CreatorGateway,
@@ -24,6 +26,7 @@ import { ClaudeService } from './llm-services/claude.service';
     ClaudeService,
     PlanRepository,
     ChatRepository,
+    AgentsRepository,
   ],
   exports: [LlmService],
 })

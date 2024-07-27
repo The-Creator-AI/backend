@@ -7,12 +7,16 @@ import { SaveUpdatePlanDto } from './dto/save-update-plan.dto';
 import { ChatEntity } from './entities/chat.entity';
 import { ChatType } from '@The-Creator-AI/fe-be-common/dist/types';
 import { ChatRepository } from './repositories/chat.repository';
+import { AgentEntity } from './entities/agent.entity';
+import { AgentsRepository } from './repositories/agent.repository';
+import { SaveUpdateAgentDto } from './dto/save-update-agent.dto';
 
 @Injectable()
 export class CreatorService {
   constructor(
     private readonly planRepository: PlanRepository,
     private readonly chatRepository: ChatRepository,
+    private readonly agentsRepository: AgentsRepository,
   ) {}
 
   getDirectoryStructure(dir: string, loadShallow: boolean = false, level = 0) {
@@ -85,8 +89,10 @@ export class CreatorService {
     return fileContents;
   }
 
-  async savePlan(plan: SaveUpdatePlanDto): Promise<PlanEntity> {
-    return this.planRepository.save(plan);
+  async savePlan(plan: SaveUpdatePlanDto) {
+    return plan.id
+      ? this.planRepository.update(plan.id, plan)
+      : this.planRepository.create(plan);
   }
 
   async deletePlan(id: number): Promise<void> {
@@ -104,8 +110,10 @@ export class CreatorService {
     }));
   }
 
-  async saveChat(chat: ChatType): Promise<ChatEntity> {
-    return this.chatRepository.save(chat);
+  async saveChat(chat: ChatType) {
+    return chat.id
+      ? this.chatRepository.update(chat.id, chat)
+      : this.chatRepository.create(chat);
   }
 
   async deleteChat(id: number): Promise<void> {
@@ -121,5 +129,22 @@ export class CreatorService {
           ? JSON.parse(chat.chat_history)
           : chat.chat_history,
     }));
+  }
+
+  async saveAgent(agent: SaveUpdateAgentDto): Promise<AgentEntity> {
+    return agent.id
+      ? this.agentsRepository.update(agent.id, agent)
+      : this.agentsRepository.create(agent);
+  }
+
+  async deleteAgent(id: number): Promise<void> {
+    await this.agentsRepository.delete(id);
+  }
+
+  async fetchAgents() {
+    const agents = await this.agentsRepository.findAll();
+    return agents.map((agent) =>
+      typeof agent === 'string' ? JSON.parse(agent) : agent,
+    );
   }
 }
