@@ -7,6 +7,8 @@ import {
 import * as openai from 'openai';
 import { CreatorService } from './creator.service';
 import { encoding_for_model } from 'tiktoken';
+import Anthropic from '@anthropic-ai/sdk';
+import * as anthropicTokenCounter from '@anthropic-ai/tokenizer';
 
 @Injectable()
 export class LlmService {
@@ -14,10 +16,13 @@ export class LlmService {
     process.env.GEMINI_API_KEY;
   private readonly openaiApiKey: string | undefined =
     process.env.OPENAI_API_KEY;
+  private readonly claudeApiKey: string | undefined =
+    process.env.CLAUDE_API_KEY;
 
   private geminiProModel: string = 'models/gemini-1.5-pro-latest'; // Default model
   private geminiFlashModel: string = 'gemini-1.5-flash-latest';
   private openaiModel: string = 'gpt-4o-mini';
+  private claudeModel: string = 'claude-3.5-sonnet';
 
   private currentModel: string = this.geminiProModel; // Track the current model being used
 
@@ -67,9 +72,13 @@ export class LlmService {
       return this.sendPromptToOpenAI(prompt, {
         chunk: on?.chunk,
       });
+    } else if (type === 'claude') {
+      return this.sendPromptToClaude(prompt, {
+        chunk: on?.chunk,
+      });
     } else {
       throw new Error(
-        'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.',
+        'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY or CLAUDE_API_KEY environment variable.',
       );
     }
   }
@@ -84,9 +93,11 @@ export class LlmService {
       return this.getTokenCountToGemini(prompt);
     } else if (type === 'openai') {
       return this.getTokenCountToOpenAI(prompt);
+    } else if (type === 'claude') {
+      return this.getTokenCountToClaude(prompt);
     } else {
       throw new Error(
-        'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.',
+        'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY or CLAUDE_API_KEY environment variable.',
       );
     }
   }
@@ -103,9 +114,13 @@ export class LlmService {
       });
     } else if (type === 'openai') {
       return this.sendPromptToOpenAI(prompt);
+    } else if (type === 'claude') {
+      return this.sendPromptToClaude(prompt, {
+        chunk: on?.chunk,
+      });
     } else {
       throw new Error(
-        'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.',
+        'No API key found. Please set either GEMINI_API_KEY or OPENAI_API_KEY or CLAUDE_API_KEY environment variable.',
       );
     }
   }
@@ -188,10 +203,6 @@ export class LlmService {
     );
   }
 
-  getModelName(): string {
-    return this.currentModel; // Access currentModel here
-  }
-
   private async sendPromptToOpenAI(
     prompt: string,
     on?: {
@@ -224,10 +235,44 @@ export class LlmService {
     return responseText;
   }
 
+  private async sendPromptToClaude(
+    prompt: string,
+    on?: {
+      chunk?: (chunk: string) => void;
+    },
+  ): Promise<string> {
+    if (!this.claudeApiKey) {
+      throw new Error('CLAUDE_API_KEY not set in environment variables.');
+    }
+
+    const client = new Anthropic({
+      apiKey: process.env['ANTHROPIC_API_KEY'], // This is the default and can be omitted
+    });
+    this.currentModel = this.claudeModel;
+    const response = await client.messages
+      .stream({
+        model: this.claudeModel,
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      })
+      .on('text', (chunk) => {
+        on?.chunk && on.chunk(chunk);
+      });
+
+    const finalMessage = await response.finalMessage();
+    return finalMessage.content[0].type === 'text'
+      ? finalMessage.content[0].text
+      : 'Failed to parse Claude response!';
+  }
+
+  getModelName(): string {
+    return this.currentModel; // Access currentModel here
+  }
+
   private getApiKey() {
-    if (this.geminiApiKey && this.openaiApiKey) {
+    if (this.geminiApiKey && this.openaiApiKey && this.claudeApiKey) {
       console.warn(
-        'Both GEMINI_API_KEY and OPENAI_API_KEY are set. Using GEMINI_API_KEY.',
+        'Both GEMINI_API_KEY and OPENAI_API_KEY and CLAUDE_API_KEY are set. Using GEMINI_API_KEY.',
       );
     }
 
@@ -237,8 +282,11 @@ export class LlmService {
     } else if (this.openaiApiKey) {
       this.currentModel = this.openaiModel;
       return { type: 'openai', apiKey: this.openaiApiKey };
+    } else if (this.claudeApiKey) {
+      this.currentModel = this.claudeModel;
+      return { type: 'claude', apiKey: this.claudeApiKey };
     } else {
-      throw new Error(`Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.
+      throw new Error(`Please set either GEMINI_API_KEY or OPENAI_API_KEY or CLAUDE_API_KEY environment variable.
 You can get API KEY for Gemini from https://aistudio.google.com/
             `);
     }
@@ -258,5 +306,9 @@ You can get API KEY for Gemini from https://aistudio.google.com/
     const tokens = encoder.encode(prompt);
     encoder.free();
     return tokens.length;
+  }
+
+  private async getTokenCountToClaude(prompt: string): Promise<number> {
+    return anthropicTokenCounter.countTokens(prompt);
   }
 }
