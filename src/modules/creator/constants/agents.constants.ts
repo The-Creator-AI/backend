@@ -1,3 +1,4 @@
+// Keep updating id at every change, IDs unti 10000 are free
 export const AGENTS = [
   {
     id: 1,

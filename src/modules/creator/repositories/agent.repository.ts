@@ -52,7 +52,7 @@ export class AgentsRepository {
       },
     });
 
-    const nextId = lastAgent ? lastAgent.id + 1 : 501;
+    const nextId = lastAgent ? lastAgent.id + 1 : 10001;
 
     // Create a new agent with the next available ID
     const newAgent = this.agentsRepository.create({
