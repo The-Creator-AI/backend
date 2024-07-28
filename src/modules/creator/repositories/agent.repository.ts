@@ -43,7 +43,9 @@ export class AgentsRepository {
                   agentsInDB.find((a) => a.id === agent.id)?.hidden ??
                   agent.hidden
                 ),
-                created_at: new Date(),
+                created_at:
+                  agentsInDB.find((a) => a.id === agent.id)?.created_at ||
+                  new Date(),
                 updated_at: new Date(),
               }),
             ),
