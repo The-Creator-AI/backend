@@ -65,7 +65,7 @@ export class AgentsRepository {
   async findAll(): Promise<AgentEntity[]> {
     return await this.agentsRepository.find({
       order: {
-        created_at: 'ASC',
+        id: 'ASC',
       },
     });
   }
