@@ -22,14 +22,6 @@ export class AgentsRepository {
         .where('id IN (:...ids)', { ids: AGENTS.map((agent) => agent.id) })
         .getMany();
 
-      console.log({
-        agentsInDB: agentsInDB.map((a) => ({
-          id: a.id,
-          name: a.name,
-          hidden: a.hidden,
-        })),
-      });
-
       // Start a transaction to ensure all operations succeed or fail together
       await this.agentsRepository.manager.transaction(
         async (transactionalEntityManager) => {
@@ -42,7 +34,7 @@ export class AgentsRepository {
             .execute();
 
           // Insert all agents from AGENTS
-          const newAgents = await Promise.all(
+          await Promise.all(
             AGENTS.map((agent) =>
               transactionalEntityManager.save(AgentEntity, {
                 ...agent,
@@ -56,12 +48,10 @@ export class AgentsRepository {
               }),
             ),
           );
-
-          console.log({ newAgents });
         },
       );
 
-      console.log('All agents successfully added or updated.');
+      console.log('All default agents successfully added or updated.');
     } catch (error) {
       console.error('Error while populating default agents:', error);
       throw new Error(
