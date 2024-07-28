@@ -61,6 +61,7 @@ export class CreatorGateway
         {
           chunk: (chunk) =>
             sendToClient(client, ToClient.BOT_MESSAGE_CHUNK, {
+              chatId: body.chatId,
               uuid,
               user: 'bot',
               model: modelName,
@@ -70,6 +71,7 @@ export class CreatorGateway
       );
 
       sendToClient(client, ToClient.BOT_MESSAGE, {
+        chatId: body.chatId,
         uuid,
         user: 'bot',
         message: response,
@@ -204,7 +206,7 @@ export class CreatorGateway
 
   @SubscribeMessage(ToServer.SAVE_CODE_TO_FILE) // New route handler
   async handleSaveCodeToFile(
-    @MessageBody() body: ChannelBody<ToServer.SAVE_CODE_TO_FILE>
+    @MessageBody() body: ChannelBody<ToServer.SAVE_CODE_TO_FILE>,
   ) {
     try {
       await this.creatorService.saveCodeToFile(body.filePath, body.code);

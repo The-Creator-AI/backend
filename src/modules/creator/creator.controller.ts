@@ -25,6 +25,7 @@ export class CreatorController {
     );
     const modelName = this.llmService.getModelName();
     return {
+      chatId: message.chatId,
       uuid: uuidv4(),
       user: 'bot',
       message: response,
