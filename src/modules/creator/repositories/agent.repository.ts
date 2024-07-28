@@ -11,22 +11,63 @@ export class AgentsRepository {
     @InjectRepository(AgentEntity)
     private readonly agentsRepository: Repository<AgentEntity>,
   ) {
-    // delete all the agents in db matching AGENTS and freshly insert all the agents in AGENTS into the databaes if not already
-    this.agentsRepository
-      .createQueryBuilder()
-      .delete()
-      .from(AgentEntity)
-      .where('id IN (:...ids)', { ids: AGENTS.map((agent) => agent.id) })
-      .execute();
-    AGENTS.forEach((agent) => {
-      this.agentsRepository.save({
-        ...agent,
-        editable: false,
-        hidden: !!agent.hidden,
-        created_at: new Date(),
-        updated_at: new Date(),
+    this.populateDefaultAgents();
+  }
+
+  private async populateDefaultAgents() {
+    try {
+      // Fetch all existing agents from the database matching the AGENTS
+      const agentsInDB = await this.agentsRepository
+        .createQueryBuilder()
+        .where('id IN (:...ids)', { ids: AGENTS.map((agent) => agent.id) })
+        .getMany();
+
+      console.log({
+        agentsInDB: agentsInDB.map((a) => ({
+          id: a.id,
+          name: a.name,
+          hidden: a.hidden,
+        })),
       });
-    });
+
+      // Start a transaction to ensure all operations succeed or fail together
+      await this.agentsRepository.manager.transaction(
+        async (transactionalEntityManager) => {
+          // Delete all existing agents matching AGENTS
+          await transactionalEntityManager
+            .createQueryBuilder()
+            .delete()
+            .from(AgentEntity)
+            .where('id IN (:...ids)', { ids: AGENTS.map((agent) => agent.id) })
+            .execute();
+
+          // Insert all agents from AGENTS
+          const newAgents = await Promise.all(
+            AGENTS.map((agent) =>
+              transactionalEntityManager.save(AgentEntity, {
+                ...agent,
+                editable: false,
+                hidden: !!(
+                  agentsInDB.find((a) => a.id === agent.id)?.hidden ??
+                  agent.hidden
+                ),
+                created_at: new Date(),
+                updated_at: new Date(),
+              }),
+            ),
+          );
+
+          console.log({ newAgents });
+        },
+      );
+
+      console.log('All agents successfully added or updated.');
+    } catch (error) {
+      console.error('Error while populating default agents:', error);
+      throw new Error(
+        'Failed to populate default agents. No changes were made to the database.',
+      );
+    }
   }
 
   async findAll(): Promise<AgentEntity[]> {
@@ -70,7 +111,6 @@ export class AgentsRepository {
   }
 
   async update(id: number, agent: SaveUpdateAgentDto): Promise<AgentEntity> {
-    console.log(agent);
     const updatedAgent = await this.agentsRepository.preload({
       id,
       ...agent,

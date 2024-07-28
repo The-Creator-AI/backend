@@ -85,7 +85,6 @@ export class CreatorGateway
     @MessageBody() body: ChannelBody<ToServer.GET_FILE_CONTENT>,
     @ConnectedSocket() client: Socket,
   ) {
-    console.log({ body });
     try {
       const fileContent = this.creatorService.getFileContent(body.filePath);
       sendToClient(client, ToClient.FILE_CONTENT, fileContent);
@@ -170,7 +169,6 @@ export class CreatorGateway
   async handleGetAgents(@ConnectedSocket() client: Socket) {
     try {
       const agents = await this.creatorService.fetchAgents();
-      console.log({ agents });
       sendToClient(client, ToClient.AGENTS, agents);
     } catch (error) {
       console.error('Error fetching agents:', error);
