@@ -147,4 +147,22 @@ export class CreatorService {
       typeof agent === 'string' ? JSON.parse(agent) : agent,
     );
   }
+
+  async saveCodeToFile(filePath: string, code: string): Promise<void> {
+    try {
+      console.log({
+        filePath,
+        code,
+      });
+      // Make sure the directory exists
+      const directory = path.dirname(filePath);
+      if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
+      }
+      // Write the code to the file
+      fs.writeFileSync(filePath, code);
+    } catch (error) {
+      console.error('Error saving code to file:', error);
+    }
+  }
 }

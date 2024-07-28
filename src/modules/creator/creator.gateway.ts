@@ -201,4 +201,15 @@ export class CreatorGateway
       console.error('Error deleting agent:', error);
     }
   }
+
+  @SubscribeMessage(ToServer.SAVE_CODE_TO_FILE) // New route handler
+  async handleSaveCodeToFile(
+    @MessageBody() body: ChannelBody<ToServer.SAVE_CODE_TO_FILE>
+  ) {
+    try {
+      await this.creatorService.saveCodeToFile(body.filePath, body.code);
+    } catch (error) {
+      console.error('Error saving code to file:', error);
+    }
+  }
 }

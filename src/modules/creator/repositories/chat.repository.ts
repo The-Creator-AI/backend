@@ -39,7 +39,7 @@ export class ChatRepository {
   async findAllChats(): Promise<ChatEntity[]> {
     return this.chatRepository.find({
       order: {
-        created_at: 'ASC',
+        created_at: 'DESC',
       },
     });
   }
