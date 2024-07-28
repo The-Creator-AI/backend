@@ -11,26 +11,28 @@ export class AgentsRepository {
     @InjectRepository(AgentEntity)
     private readonly agentsRepository: Repository<AgentEntity>,
   ) {
-    // inser all the agents in AGENTS into the databaes if not already
-    for (const agent of AGENTS) {
-      this.agentsRepository
-        .findOne({
-          where: {
-            id: agent.id,
-          },
-        })
-        .then((existingAgent) => {
-          if (!existingAgent) {
-            this.create(agent);
-          }
-        });
-    }
+    // delete all the agents in db matching AGENTS and freshly insert all the agents in AGENTS into the databaes if not already
+    this.agentsRepository
+      .createQueryBuilder()
+      .delete()
+      .from(AgentEntity)
+      .where('id IN (:...ids)', { ids: AGENTS.map((agent) => agent.id) })
+      .execute();
+    AGENTS.forEach((agent) => {
+      this.agentsRepository.save({
+        ...agent,
+        editable: false,
+        hidden: !!agent.hidden,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+    });
   }
 
   async findAll(): Promise<AgentEntity[]> {
     return await this.agentsRepository.find({
       order: {
-        created_at: 'DESC',
+        created_at: 'ASC',
       },
     });
   }

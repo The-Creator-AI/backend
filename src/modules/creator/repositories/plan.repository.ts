@@ -39,7 +39,7 @@ export class PlanRepository {
   async findAllPlans(): Promise<PlanEntity[]> {
     return this.planRepository.find({
       order: {
-        created_at: 'DESC',
+        created_at: 'ASC',
       },
     });
   }
