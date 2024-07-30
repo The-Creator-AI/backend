@@ -501,7 +501,7 @@ export const AGENTS = [
         description: "[description of the command will do what it is supposed to do]",
       },
       {
-        "filename": "[Name of the file]",
+        "filename": "[Fule path of the file to be modified]",
         "operation": "[Add, Modify, or Remove]",
         "recommendations": [
           "[Specific change 1]",
@@ -532,7 +532,7 @@ export const AGENTS = [
         "description": "Install the pandas library for data manipulation."
       }.
       {
-        "filename": "data_fetcher.py",
+        "filename": "path/to/file/data_fetcher.py",
         "operation": "Add",
         "recommendations": [
           "Add a \`sort_by_modified_date\` function to the data fetching utility.",
@@ -540,7 +540,7 @@ export const AGENTS = [
         ]
       },
       {
-        "filename": "settings.py",
+        "filename": "path/to/second/file/settings.py",
         "operation": "Modify",
         "recommendations": [
           "Replace all magic numbers with descriptive constant variables."
