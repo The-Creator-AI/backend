@@ -212,7 +212,7 @@ export class CreatorGateway
     try {
       const fullPath = this.creatorService.getFullPath(
         body.filePath,
-        process.env.CUR_WRK_DIR,
+        body.currentPath,
       );
       sendToClient(client, ToClient.FULL_FILE_PATH, fullPath);
     } catch (error) {
@@ -225,7 +225,10 @@ export class CreatorGateway
     @MessageBody() body: ChannelBody<ToServer.SAVE_CODE_TO_FILE>,
   ) {
     try {
-      await this.creatorService.saveCodeToFile(body.filePath, body.code);
+      await this.creatorService.saveCodeToFile(
+        this.creatorService.getFullPath(body.filePath, body.currentPath),
+        body.code,
+      );
     } catch (error) {
       console.error('Error saving code to file:', error);
     }
