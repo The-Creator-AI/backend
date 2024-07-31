@@ -150,10 +150,7 @@ export class CreatorService {
 
   async saveCodeToFile(filePath: string, code: string): Promise<void> {
     try {
-      console.log({
-        filePath,
-        code,
-      });
+      console.log('Applying changes to ', filePath);
       // Make sure the directory exists
       const directory = path.dirname(filePath);
       if (!fs.existsSync(directory)) {
