@@ -165,4 +165,29 @@ export class CreatorService {
       console.error('Error saving code to file:', error);
     }
   }
+
+  getFullPath(trailingPath: string, workingDirPath: string): string | null {
+    const search = (dir: string): string | null => {
+      const items = fs.readdirSync(dir);
+
+      for (const item of items) {
+        const fullPath = path.join(dir, item);
+        const stat = fs.statSync(fullPath);
+
+        if (stat.isDirectory()) {
+          if (fullPath.endsWith(trailingPath)) {
+            return fullPath;
+          }
+          const result = search(fullPath);
+          if (result) return result;
+        } else if (stat.isFile() && fullPath.endsWith(trailingPath)) {
+          return fullPath;
+        }
+      }
+
+      return null;
+    };
+
+    return search(workingDirPath);
+  }
 }

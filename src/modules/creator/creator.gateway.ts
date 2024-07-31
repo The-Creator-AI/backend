@@ -204,6 +204,22 @@ export class CreatorGateway
     }
   }
 
+  @SubscribeMessage(ToServer.GET_FULL_FILE_PATH) // New route handler
+  async handleGetFullPath(
+    @MessageBody() body: ChannelBody<ToServer.GET_FULL_FILE_PATH>,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const fullPath = this.creatorService.getFullPath(
+        body.filePath,
+        process.env.CUR_WRK_DIR,
+      );
+      sendToClient(client, ToClient.FULL_FILE_PATH, fullPath);
+    } catch (error) {
+      console.error('Error fetching full file path:', error);
+    }
+  }
+
   @SubscribeMessage(ToServer.SAVE_CODE_TO_FILE) // New route handler
   async handleSaveCodeToFile(
     @MessageBody() body: ChannelBody<ToServer.SAVE_CODE_TO_FILE>,
