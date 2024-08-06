@@ -119,7 +119,7 @@ export class LlmService {
     }
 
     if (this.geminiApiKey) {
-      this.currentModel = 'gemini-1.5-pro-latest';
+      this.currentModel = 'gemini-1.5-pro-exp-0801';
       return { type: 'gemini', apiKey: this.geminiApiKey };
     } else if (this.openaiApiKey) {
       this.currentModel = 'gpt-4o-mini';

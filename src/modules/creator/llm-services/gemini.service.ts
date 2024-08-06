@@ -7,7 +7,7 @@ import {
 
 @Injectable()
 export class GeminiService {
-  private geminiProModel: string = 'models/gemini-1.5-pro-latest'; // Default model
+  private geminiProModel: string = 'gemini-1.5-pro-exp-0801'; // Default model
   private geminiFlashModel: string = 'gemini-1.5-flash-latest';
   private currentModel: string = this.geminiProModel; // Track the current model being used
   private readonly geminiApiKey: string | undefined =
