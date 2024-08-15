@@ -7,6 +7,7 @@ async function bootstrap() {
 
   // Retrieve the port number from the environment variables
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  console.log(`Port number: ${port}`);
 
   await app.listen(port);
   console.log(`Application is running on: ${await app.getUrl()}`);
