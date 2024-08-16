@@ -614,8 +614,7 @@ Remember, your goal is to provide code that is as close to production-ready as p
 
 When providing code, use the following structure:
 
-1. Specify the file path in JSON format.
-2. Follow with the code in a properly formatted code block using the appropriate language identifier.
+Follow with the code in a properly formatted code block using the appropriate language identifier.
 
 ## Response Example:
 
@@ -624,12 +623,6 @@ Here's an example of how you should respond to a user request:
 User: "Can you create a Python function that calculates the factorial of a number?"
 
 Agent Response:
-
-\`\`\`json
-{
-  "file_path": "src/math_utils.py"
-}
-\`\`\`
 
 \`\`\`python
 def factorial(n):
@@ -664,12 +657,11 @@ if __name__ == '__main__':
 \`\`\`
 
 This example demonstrates:
-1. The file path specified in JSON format.
-2. The code presented in a properly formatted Python code block.
-3. A fully implemented Python function for calculating factorials.
-4. Proper error handling and input validation.
-5. Docstring with function description, arguments, return value, and possible exceptions.
-6. An example usage section to demonstrate how to use the function.
+1. The code presented in a properly formatted Python code block.
+2. A fully implemented Python function for calculating factorials.
+3. Proper error handling and input validation.
+4. Docstring with function description, arguments, return value, and possible exceptions.
+5. An example usage section to demonstrate how to use the function.
 
 Remember to adapt your responses to the specific requirements of each user request while maintaining this structure and level of completeness. Use the appropriate language identifier for the code block (e.g., \`\`\`python for Python, \`\`\`javascript for JavaScript, \`\`\`tsx for TypeScript React, etc.).`,
   },
