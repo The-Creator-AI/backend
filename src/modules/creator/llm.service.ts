@@ -13,7 +13,7 @@ export class LlmService {
   private readonly claudeApiKey: string | undefined =
     process.env.CLAUDE_API_KEY;
 
-  private currentModel: string = 'gemini-1.5-pro-latest'; // Default model
+  private currentModel: string = 'gemini-1.5-pro-exp-0827'; // Default model
 
   constructor(
     private readonly creatorService: CreatorService,
@@ -119,7 +119,7 @@ export class LlmService {
     }
 
     if (this.geminiApiKey) {
-      this.currentModel = 'gemini-1.5-pro-exp-0801';
+      this.currentModel = 'gemini-1.5-pro-exp-0827';
       return { type: 'gemini', apiKey: this.geminiApiKey };
     } else if (this.openaiApiKey) {
       this.currentModel = 'gpt-4o-mini';
