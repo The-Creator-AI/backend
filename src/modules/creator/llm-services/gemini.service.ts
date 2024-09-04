@@ -38,8 +38,6 @@ export class GeminiService {
     }
     // If all keys have been used twice in the last 60 seconds, fallback to flash model
     const fallbackKey = this.geminiApiKeys[0];
-    this.apiKeyUsage[fallbackKey].count++;
-    this.apiKeyUsage[fallbackKey].lastUsed = now;
     return { apiKey: fallbackKey, model: this.geminiFlashModel };
   }
 
