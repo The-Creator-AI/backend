@@ -12,21 +12,35 @@ export class GeminiService {
   private readonly geminiApiKeys: string[] = (process.env.GEMINI_API_KEY || '')
     .split(',')
     .map((key) => key.trim());
-  private apiKeyUsage: { [key: string]: number } = {};
+  private apiKeyUsage: { [key: string]: { lastUsed: number; count: number } } =
+    {};
 
   constructor() {
-    // Initialize last usage time for all API keys to 0
-    this.geminiApiKeys.forEach((key) => (this.apiKeyUsage[key] = 0));
+    // Initialize last usage time and count for all API keys
+    this.geminiApiKeys.forEach(
+      (key) => (this.apiKeyUsage[key] = { lastUsed: 0, count: 0 }),
+    );
   }
 
   private selectApiKeyAndModel(): { apiKey: string; model: string } {
     const now = Date.now();
     for (const apiKey of this.geminiApiKeys) {
-      if (now - this.apiKeyUsage[apiKey] > 60000) {
-        return { apiKey, model: this.geminiProModel }; // Return pro model if key is available
+      if (now - this.apiKeyUsage[apiKey].lastUsed > 60000) {
+        // Reset count if more than 60 seconds have passed
+        this.apiKeyUsage[apiKey].count = 0;
+      }
+      if (this.apiKeyUsage[apiKey].count < 2) {
+        // Use the key if it has been used less than twice in the last 60 seconds
+        this.apiKeyUsage[apiKey].count++;
+        this.apiKeyUsage[apiKey].lastUsed = now;
+        return { apiKey, model: this.geminiProModel }; // Return pro model
       }
     }
-    return { apiKey: this.geminiApiKeys[0], model: this.geminiFlashModel }; // Fallback to flash model
+    // If all keys have been used twice in the last 60 seconds, fallback to flash model
+    const fallbackKey = this.geminiApiKeys[0];
+    this.apiKeyUsage[fallbackKey].count++;
+    this.apiKeyUsage[fallbackKey].lastUsed = now;
+    return { apiKey: fallbackKey, model: this.geminiFlashModel };
   }
 
   async sendPrompt(
@@ -42,7 +56,11 @@ export class GeminiService {
     const { apiKey, model } = this.selectApiKeyAndModel(); // Select API key and model
 
     console.log(`Using model: ${model}, API Key: ${apiKey}`);
-    this.apiKeyUsage[apiKey] = Date.now(); // Update last usage time
+    this.apiKeyUsage[apiKey] = {
+      ...this.apiKeyUsage[apiKey],
+      count: this.apiKeyUsage[apiKey].count + 1,
+      lastUsed: Date.now(),
+    };
 
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
