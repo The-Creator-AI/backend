@@ -22,26 +22,40 @@ export class GeminiService {
     );
   }
 
-  private selectApiKeyAndModel(): { apiKey: string; model: string } {
-    const now = Date.now();
-    for (const apiKey of this.geminiApiKeys) {
-      if (now - this.apiKeyUsage[apiKey].lastUsed > 60000) {
-        // Reset count if more than 60 seconds have passed
-        this.apiKeyUsage[apiKey].count = 0;
+  private selectApiKeyAndModel(giveFallback: boolean = false): {
+    apiKey: string;
+    model: string;
+  } {
+    if (giveFallback) {
+      const apiKey = this.geminiApiKeys[0];
+      return { apiKey, model: this.geminiFlashModel };
+    } else {
+      const now = Date.now();
+      for (const apiKey of this.geminiApiKeys) {
+        if (now - this.apiKeyUsage[apiKey].lastUsed > 60000) {
+          // Reset count if more than 60 seconds have passed
+          this.apiKeyUsage[apiKey].count = 0;
+        }
+        if (this.apiKeyUsage[apiKey].count < 2) {
+          // Use the key if it has been used less than twice in the last 60 seconds
+          this.apiKeyUsage[apiKey].count++;
+          this.apiKeyUsage[apiKey].lastUsed = now;
+          return { apiKey, model: this.geminiProModel }; // Return pro model
+        }
       }
-      if (this.apiKeyUsage[apiKey].count < 2) {
-        // Use the key if it has been used less than twice in the last 60 seconds
-        this.apiKeyUsage[apiKey].count++;
-        this.apiKeyUsage[apiKey].lastUsed = now;
-        return { apiKey, model: this.geminiProModel }; // Return pro model
-      }
+      // If all keys have been used twice in the last 60 seconds, fallback to flash model
+      console.log('All API keys have been used twice in the last 60 seconds.');
+      // list down the keys and their usage, last used should be the number of seconds ago
+      console.log(
+        Object.entries(this.apiKeyUsage).map(([key, value]) => ({
+          key,
+          ...value,
+          lastUsed: (now - value.lastUsed) / 1000,
+        })),
+      );
+      const fallbackKey = this.geminiApiKeys[0];
+      return { apiKey: fallbackKey, model: this.geminiFlashModel };
     }
-    // If all keys have been used twice in the last 60 seconds, fallback to flash model
-    console.log('All API keys have been used twice in the last 60 seconds.');
-    // list down the keys and their usage
-    console.log('API Key Usage:', this.apiKeyUsage);
-    const fallbackKey = this.geminiApiKeys[0];
-    return { apiKey: fallbackKey, model: this.geminiFlashModel };
   }
 
   async sendPrompt(
@@ -112,7 +126,7 @@ export class GeminiService {
   }
 
   async getTokenCount(prompt: string): Promise<number> {
-    const { apiKey, model } = this.selectApiKeyAndModel(); // Select API key and model
+    const { apiKey, model } = this.selectApiKeyAndModel(true); // Select API key and model
     const genAI = new GoogleGenerativeAI(apiKey);
     const gemini = genAI.getGenerativeModel({
       model,
