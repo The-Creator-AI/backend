@@ -37,6 +37,9 @@ export class GeminiService {
       }
     }
     // If all keys have been used twice in the last 60 seconds, fallback to flash model
+    console.log('All API keys have been used twice in the last 60 seconds.');
+    // list down the keys and their usage
+    console.log('API Key Usage:', this.apiKeyUsage);
     const fallbackKey = this.geminiApiKeys[0];
     return { apiKey: fallbackKey, model: this.geminiFlashModel };
   }
